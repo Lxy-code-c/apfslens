@@ -690,7 +690,9 @@ func (v *apfsVolume) listDir(path string, snap uint64) ([]apfsDirEntry, error) {
 			continue
 		}
 		name := cleanDirName(k.Name)
-		if name == "" || name == "." || name == ".." {
+		// 隐藏项（. 开头）在主列表这里就要挡掉：这条是被缓存的 entries
+		// 分支（占绝大多数情况），漏掉一处就等于“隐藏项又冒出来了”。
+		if name == "" || name == "." || name == ".." || strings.HasPrefix(name, ".") {
 			continue
 		}
 		e := apfsDirEntry{Name: name, Type: entryType(uint16(val.Flags)), Oid: types.OidT(val.FileID)}
