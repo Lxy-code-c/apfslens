@@ -31,6 +31,8 @@ func (logSink) Write(p []byte) (int, error) {
 func runApp() {
 	// WebView2 的窗口与消息循环必须在同一个 OS 线程上：先钉住主线程。
 	runtime.LockOSThread()
+	// 必须在任何窗口/WebView 之前：否则高分屏会被系统拉伸成位图，界面发糊。
+	setDPIAware()
 	initCrashLog()
 	log.SetOutput(logSink{})
 	defer func() {

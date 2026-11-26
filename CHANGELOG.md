@@ -1,5 +1,11 @@
 # 变更记录
 
+## 2026Y11M26D-5
+- 修「界面像图片、有点模糊」：Windows 版进程启动即声明**每显示器 DPI 感知 v2**（`SetProcessDpiAwarenessContext` → `shcore.SetProcessDpiAwareness` → `SetProcessDPIAware` 三级回退），高分屏/缩放 125%~250% 下 WebView2 按物理像素渲染，不再把整个窗口当位图拉伸；
+- 排版锐化：正文字号 15px、行高 1.55，开启 `optimizeLegibility` 与灰度抗锯齿；去掉 600/650 这类会触发“合成加粗”的字重统一为 700；次要文字（说明、表头、占位符）对比度上调，表格改用等宽数字 + 更实的行线，整屏不再灰蒙蒙；
+- Linux / macOS 版同样锐化：去掉彩色 emoji 图标（小尺寸下最易糊），换成统一尺寸的方形色点（目录=蓝、文件=灰），表格数字等宽；
+- 自检：三平台全部重新编译通过，Linux x64 对 APFS 测试镜像跑通全链路（扫盘 → 卷 TEST → 根目录 → README.md 2677 字节校验一致 → 隐藏项 `.DS_Store` 下载 403 → 搜索只回可见文件）。
+
 ## 2026Y11M26D-4
 - 新增程序图标：Windows 内嵌 .ico（多尺寸）、macOS .icns、Linux 桌面 png，同一套视觉；
 - 新增 Linux 与 macOS 图形版（纯 Go 无 cgo），双击 .app / 桌面快捷方式即开，不需要任何命令行操作；
