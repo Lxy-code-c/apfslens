@@ -1,11 +1,11 @@
 # 变更记录
 
 ## 2026Y11M26D-4
-- 纯图形版：不提供任何命令行入口，三平台均为 GUI 启动；
-- 新增 Linux / macOS 预览构建目标（x64 / arm64），本机页面图形壳，自动调系统浏览器；
-- 新增程序图标：多尺寸 `icon.ico`、`icon.icns`、`png/` 全套；
-- 新增 macOS `.app` 打包脚本（`packaging/macos-app.sh` + `Info.plist`）与 Linux `.desktop` 入口；
-- `Makefile` 拆分为 `windows` / `linux` / `darwin` / `native` / `package` 目标。
+- 新增程序图标：Windows 内嵌 .ico（多尺寸）、macOS .icns、Linux 桌面 png，同一套视觉；
+- 新增 Linux 与 macOS 图形版（纯 Go 无 cgo），双击 .app / 桌面快捷方式即开，不需要任何命令行操作；
+- 两个新平台复用同一份 APFS 只读引擎：分区表自解析、卷列表、目录浏览、文件下载、卷内搜索、快照列表；
+- 跨平台版列表/搜索/下载三处出口同样屏蔽 `.` 开头的隐藏项；
+- 交付形态统一为图形程序（Windows exe / Linux 目录 / macOS .app）。
 
 ## 2026Y11M26D-3
 - 隐藏项（`.` 开头）在**列目录、全盘搜索、大文件、快照对比、导出、挂载镜像**全链路屏蔽；

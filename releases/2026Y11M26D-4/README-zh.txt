@@ -86,14 +86,14 @@ A：先确认密码是这台 Mac 上 FileVault 的登录密码；
    若仍失败请把卷卡上的报错发我，我按报错继续调。
 
 Q：双击没反应 / 被杀软拦？
-A：用同目录的「launch.cmd」，它会去掉「来自网络」标记再启动。
+A：用同目录的「解除拦截并启动.cmd」，它会去掉「来自网络」标记再启动。
    程序需要管理员权限才能读物理磁盘（会弹 UAC，点「是」）。
 
 六、文件说明
 ----------------------------------------------------
-udisk-tool-x64.exe        主程序（单文件，已内嵌界面，无需 WebView2Loader.dll）
-launch.cmd        解除 SmartScreen 标记并启动
-README-zh.txt             本文件
+U盘格式化工具.exe        主程序（单文件，已内嵌界面，无需 WebView2Loader.dll）
+解除拦截并启动.cmd        解除 SmartScreen 标记并启动
+使用说明.txt             本文件
 
 运行环境：Windows 10/11 x64，系统自带 WebView2 运行时（Edge 已装即满足）。
 所有解析都在本机完成，程序只监听 127.0.0.1 上一个带随机令牌的预览端口，
@@ -252,14 +252,14 @@ README-zh.txt             本文件
 ----------------------------------------------------
 一、三个架构都提供了，按系统自动选，不用你判断：
 
-  udisk-tool-x64.exe        → x64（也就是你说的 X86-64 / 64 位 Windows，绝大多数电脑）
-  udisk-tool-arm64.exe  → ARM64（高通骁龙 X 系列那些 Windows on ARM 机器）
-  udisk-tool-x86.exe    → 32 位 Windows（老机器 / 32 位虚拟机）
+  U盘格式化工具.exe        → x64（也就是你说的 X86-64 / 64 位 Windows，绝大多数电脑）
+  U盘格式化工具-arm64.exe  → ARM64（高通骁龙 X 系列那些 Windows on ARM 机器）
+  U盘格式化工具-x86.exe    → 32 位 Windows（老机器 / 32 位虚拟机）
 
   三个文件是同一套代码分别编译的，功能完全一致；每个 exe 里都内嵌了
   对应架构的 WebView2Loader（x64 / arm64 / x86 各一份），不会出现
   「DLL 位数不对，窗口起不来」。
-  「launch.cmd」会自动识别 PROCESSOR_ARCHITECTURE 选对那个 exe，
+  「解除拦截并启动.cmd」会自动识别 PROCESSOR_ARCHITECTURE 选对那个 exe，
   并且一次性解除三个 exe 的网络来源拦截。
 
 二、卡顿优化（这次的重点之一）：
@@ -314,10 +314,10 @@ README-zh.txt             本文件
      改为「打开镜像目录」，两个入口分开，不会再混。
 
 4) 三个架构同时提供（同一份源码，同样的修复）：
-   · udisk-tool-x64.exe          —— 64 位（x64）
-   · udisk-tool-x86.exe      —— 32 位
-   · udisk-tool-arm64.exe    —— ARM64（高通/骁龙本）
-   「launch.cmd」会自动挑当前 CPU 对应的那一个，不用手动选。
+   · U盘格式化工具.exe          —— 64 位（x64）
+   · U盘格式化工具-x86.exe      —— 32 位
+   · U盘格式化工具-arm64.exe    —— ARM64（高通/骁龙本）
+   「解除拦截并启动.cmd」会自动挑当前 CPU 对应的那一个，不用手动选。
 
 5) 本轮检查记录：
    · windows/amd64、windows/386、windows/arm64 三套 go build 全部 0 错误；
@@ -351,7 +351,7 @@ README-zh.txt             本文件
    4) 复制改成「先写临时名，写完再改名」（xxx.udisk-part → xxx）。以前
       边复制边能看到半截文件，打开视频/图片会报损坏；现在资源管理器里
       只会出现完整文件。导出整卷/导出目录同样。
-   5) 启动脚本「launch.cmd」会把自己最小化（不再把黑窗口摆在
+   5) 启动脚本「解除拦截并启动.cmd」会把自己最小化（不再把黑窗口摆在
       面前），并且等 3 秒自动关闭，避免「闪一下」的错觉。
    6) 版本号直接写在界面的「关于」里，显示 2026Y11M25D，方便你确认拿到
       的是哪一版。
@@ -519,8 +519,8 @@ README-zh.txt             本文件
    udisk_native.exe / udisk_native-x86.exe                  C++ 搬运引擎
    udisk_probe.exe / udisk_probe-x86.exe                    C 分区核对引擎
    udisk_doctor.py                                          Python 诊断引擎
-   README-zh.txt
-   launch.cmd
+   使用说明.txt
+   解除拦截并启动.cmd
    缺任何一个都不会崩：只是对应的能力退回上一级实现（C++→Go、C→跳过、
    Python→Go 排版）。
 
@@ -563,7 +563,7 @@ README-zh.txt             本文件
    udisk_native.exe / -x86.exe（C++ 搬运）
    udisk_probe.exe / -x86.exe（C 分区核对）
    udisk_doctor.py（Python 诊断）
-   README-zh.txt、launch.cmd
+   使用说明.txt、解除拦截并启动.cmd
 
 ========================
 十七、2026Y11M26D-2：文件夹可以直接点了 + 几个顺手的小功能
@@ -621,16 +621,33 @@ README-zh.txt             本文件
    exe 作为 Release 附件上传（二进制不入 git，已在 .gitignore 排除）。
 
 ============================================================
-十九、2026Y11M26D-4 跨平台与图标
+十九、2026Y11M26D-4：三平台图形版 + 程序图标
 ============================================================
-1. 本版起只提供图形版，不提供命令行。
-2. Windows 三个架构功能完整；Linux / macOS 为预览版本：
-   - Linux：解压 udisk-tool-linux-x64.tar.gz（或 arm64），
-     运行目录里的 udisk-tool-linux-x64 / arm64，桌面入口见 .desktop 文件。
-   - macOS：解压对应架构的 .app.zip，把「U APFS Tool」拖到应用程序文件夹；
-     Apple Silicon 用 arm64 包，Intel 用 x64 包。未签名的首次打开请在
-     「系统设置 → 隐私与安全性」里允许打开。
-3. 程序图标已内置：Windows exe 资源图标、macOS .app 的 icon.icns、
-   Linux 桌面图标 udisk-tool.png。
-4. 本平台（Linux/macOS）的磁盘扫描、挂载、格式化能力将在后续版本接通；
-   APFS 只读解析引擎已随包编译。
+一、现在只有图形版，没有任何命令行入口
+   Windows：udisk-tool-x64.exe（或 launch.cmd 自动选架构），双击出窗口
+   Linux  ：u-apfs（双击 u-apfs.desktop，或直接双击可执行文件）
+   macOS  ：U APFS.app，双击即可，拖进「应用程序」也能用
+
+二、Linux / macOS 版怎么做的
+   同一份纯 Go 的 APFS 只读引擎（分区表自解析、卷列表、目录浏览、
+   文件下载、卷内搜索、快照列表），没有 cgo、没有第三方运行时依赖。
+   窗口用系统默认浏览器渲染本机页面（127.0.0.1 随机端口，只监听本机，
+   不联网），所以不需要装 WebView 组件。
+   读整块盘（/dev/sdX、/dev/disk2）需要管理员权限：
+   Linux 用 sudo 启动一次，或把用户加入 disk 组；macOS 首次会弹
+   「完全磁盘访问」授权，按提示允许即可。读镜像文件（.img/.dmg 里的
+   原始分区）则不需要任何权限。
+
+三、图标
+   一套设计三种格式：
+   - Windows：内嵌进 exe 的 .ico（16/24/32/48/64/128/256 全尺寸）
+   - macOS：App 包里的 AppIcon.icns（含 512/1024，Retina 清晰）
+   - Linux：u-apfs.png 与 u-apfs.desktop 引用
+   图形语义：银色盘片 + 蓝色放大镜 = 查看磁盘里的内容。
+
+四、跨平台版的能力边界（说清楚，免得误会）
+   已支持：APFS 只读浏览、目录进出、文件下载、卷内搜索、快照列表、
+           隐藏项（. 开头）不显示也不提供下载。
+   暂不支持：格式化、写盘、盘符映射挂载（这三项仍只在 Windows 版里，
+           因为要用 Windows 的 diskpart / DefineDosDevice）。
+   加密卷（FileVault）：跨平台版目前只标出「加密」标签，不解锁。

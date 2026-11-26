@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=U APFS Tool
+Name=U APFS
 Name[zh_CN]=U APFS 工具
-Comment=APFS 磁盘只读浏览与管理（图形版）
-Comment[zh_CN]=APFS 磁盘只读浏览与管理（图形版）
-Exec=udisk-tool-linux-x64 %f
+Comment=APFS 磁盘只读浏览（图形版）
+Comment[zh_CN]=APFS 磁盘只读浏览（图形版）
+Exec=udisk-tool-linux-x64
 Icon=udisk-tool
 Categories=Utility;DiskImage;
 Terminal=false

@@ -4,6 +4,7 @@
 *.o
 *.a
 /build/
+src/cross/build/
 # 本地临时
 *.log
 *.tmp
@@ -15,3 +16,4 @@ releases/**/*.tar.gz
 releases/**/*.app/
 # 本地 bundle
 *.bundle
+build/
