@@ -1,0 +1,11 @@
+# 构建产物
+*.exe
+*.dll
+*.o
+*.a
+/build/
+# 本地临时
+*.log
+*.tmp
+*.udisk-part
+__pycache__/

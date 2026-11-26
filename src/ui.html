@@ -1,0 +1,1726 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>U盘硬盘格式化工具</title>
+<style>
+:root{
+  --bg:#0d1116; --surface:#161d25; --line:#25303a; --line2:#32404c; --line3:#41505d;
+  --text:#e9eff3; --muted:#93a1ad; --dim:#65727d;
+  --amber:#eaa53f; --amber-2:#f6c479; --teal:#48c3a9; --red:#e06753; --blue:#6fa8cf;
+  --mono:"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:14.5px/1.6 var(--sans);overflow:hidden;height:100%;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+input,select{font:inherit;color:inherit}
+::selection{background:#3a2f18;color:#f8d9a6}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#2f3b46;border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:#3b4956}
+
+/* ================= 布局 ================= */
+.shell{display:grid;grid-template-columns:236px minmax(0,1fr);height:100vh;min-height:0;overflow:hidden}
+.rail{background:linear-gradient(180deg,#0c1015,#0a0e12);border-right:1px solid #1e262e;display:flex;flex-direction:column;padding:20px 14px 14px}
+.brand{display:flex;align-items:center;gap:11px;padding:0 4px 18px;border-bottom:1px solid #1e262e;margin-bottom:16px}
+.mark{width:36px;height:36px;flex:none;border:1px solid #33414d;border-radius:10px;display:grid;place-items:center;
+  background:radial-gradient(140% 120% at 20% 0%,#2a353f,#141b21);box-shadow:inset 0 1px 0 #ffffff10}
+.brand h1{font-size:13px;line-height:1.35;margin:0;font-weight:650;letter-spacing:.01em}
+.brand small{display:block;font:10.5px/1.4 var(--mono);color:var(--dim);margin-top:2px}
+.nav{display:flex;flex-direction:column;gap:3px}
+.nav .cap{font:10px/1 var(--mono);letter-spacing:.14em;color:#4e5b66;padding:2px 6px 8px}
+.nav button{display:flex;align-items:center;gap:11px;padding:10px;border-radius:8px;color:#a9b6c1;
+  text-align:left;font-size:13.5px;position:relative;transition:background .16s,color .16s}
+.nav button svg{width:16px;height:16px;flex:none;opacity:.72}
+.nav button:hover{background:#131a21;color:var(--text)}
+.nav button:hover svg{opacity:1}
+.nav button[aria-current="page"]{background:#161e26;color:#fff}
+.nav button[aria-current="page"] svg{opacity:1;stroke:var(--amber)}
+.nav button[aria-current="page"]::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:2px;border-radius:2px;background:var(--amber)}
+.rail .spacer{flex:1}
+.sysblock{border:1px solid #202932;border-radius:11px;padding:11px 12px;margin-bottom:9px;background:#10161c}
+.sysblock .k{font:10px/1 var(--mono);color:#4e5b66;letter-spacing:.12em;text-transform:uppercase}
+.sysblock .v{font:11.5px/1.5 var(--mono);margin-top:7px;color:#8d9aa5;display:flex;align-items:center;gap:7px}
+.led{width:6px;height:6px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px #48c3a980;flex:none}
+
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%;
+  background:radial-gradient(1100px 460px at 88% -12%,#18212a 0%,transparent 62%),var(--bg)}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:20px 28px 16px;border-bottom:1px solid #1e262e}
+.head h2{margin:0;font-size:20px;font-weight:650;letter-spacing:-.01em}
+.head p{margin:5px 0 0;color:var(--muted);font-size:12.5px;max-width:58ch}
+.head .actions{display:flex;gap:8px;align-items:center;flex:none;padding-top:3px}
+.content{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:24px 30px 96px}
+.page{display:none}
+.page.active{display:block;animation:rise .24s cubic-bezier(.2,.7,.3,1)}
+@keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+
+/* ================= 基础控件 ================= */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;white-space:nowrap;flex:none;border-radius:9px;border:1px solid var(--line2);
+  background:#212b35;color:var(--text);font-size:13px;transition:background .15s,border-color .15s,transform .08s}
+.btn:hover:not(:disabled){background:#283441;border-color:#465764}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,#f0b352,#dd9431);border-color:#b97c25;color:#221503;font-weight:650;
+  box-shadow:inset 0 1px 0 #ffd79a55,0 6px 18px -8px #eaa53f80}
+.btn.primary:hover:not(:disabled){background:linear-gradient(180deg,#f6bf62,#e69d38)}
+.btn.ghost{background:transparent;border-color:#2b3641;color:var(--muted)}
+.btn.ghost:hover:not(:disabled){background:#171e25;color:var(--text)}
+.btn.danger{border-color:#5a3129;color:#eda597;background:#1f1412}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
+.head .actions .btn{height:34px}
+
+.mono{font-family:var(--mono);font-size:12.5px;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.dim{color:var(--dim)}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:1.5px 8px;border-radius:5px;font:11px/1.7 var(--mono);
+  border:1px solid var(--line2);color:#aebbc5;background:#1d262e}
+.tag.apfs{color:var(--amber-2);border-color:#5b4523;background:#231c11}
+.tag.sys{color:#f0a595;border-color:#553029;background:#211513}
+
+/* ================= 指标条 ================= */
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:12px;
+  background:linear-gradient(180deg,#171f27,#131a20);margin-bottom:24px;overflow:hidden}
+.metric{padding:16px 20px;position:relative}
+.metric+.metric::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:1px;background:#232e38}
+.metric .lbl{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
+.metric .lbl i{width:5px;height:5px;border-radius:50%;background:var(--line3);flex:none}
+.metric .num{font:600 32px/1.05 var(--mono);margin:9px 0 3px;letter-spacing:-.03em;display:flex;align-items:baseline;gap:6px}
+.metric .num em{font:11px/1 var(--sans);color:var(--dim);font-style:normal}
+.metric .sub{font-size:11px;color:var(--dim)}
+.metric.warm .num{color:var(--amber-2)}
+.metric.warm .lbl i{background:var(--amber)}
+
+/* ================= 设备卡 ================= */
+.devlist{display:flex;flex-direction:column;gap:13px}
+.dev{border:1px solid var(--line);border-radius:13px;background:linear-gradient(180deg,#171f26,#131a21);
+  padding:16px 18px;display:grid;grid-template-columns:42px minmax(0,1fr) 168px;gap:16px;align-items:start;
+  transition:border-color .18s,transform .18s}
+.dev:hover{border-color:#33414d;transform:translateY(-1px)}
+.dev-ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;border:1px solid #2b3742;background:#1a232b}
+.dev-ico svg{width:19px;height:19px;stroke:#9fb0bd}
+.dev.issys .dev-ico svg{stroke:#c98a7e}
+.dev.isapfs .dev-ico{border-color:#5b4523;background:#221b10}
+.dev.isapfs .dev-ico svg{stroke:var(--amber)}
+.dev-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.dev-top strong{font-size:14.5px;font-weight:650}
+.dev-path{font:11.5px/1.6 var(--mono);color:var(--dim);margin-top:3px;word-break:break-all}
+.map{height:9px;border-radius:5px;background:#0e1419;border:1px solid #202a33;overflow:hidden;display:flex;gap:2px;margin:12px 0 9px;padding:1px}
+.map i{display:block;height:100%;border-radius:3px;min-width:3px}
+.map .c-apfs{background:linear-gradient(180deg,#f3bd6c,#cf8f2c)}
+.map .c-ntfs{background:linear-gradient(180deg,#87b9d9,#4d7f9f)}
+.map .c-fat{background:linear-gradient(180deg,#7fd6c0,#3d9a85)}
+.map .c-other{background:linear-gradient(180deg,#8996a2,#5b6873)}
+.map .c-free{background:#2b343d}
+.legend{display:flex;flex-wrap:wrap;gap:6px}
+.seg-chip{display:inline-flex;align-items:center;gap:6px;font:11px/1.7 var(--mono);color:#a9b6c1;
+  background:#1a222a;border:1px solid #26313b;border-radius:6px;padding:1px 7px}
+.seg-chip u{width:7px;height:7px;border-radius:2px;background:#6d7b86;text-decoration:none;flex:none}
+.seg-chip.c-apfs u{background:#e0a445}.seg-chip.c-ntfs u{background:#5f8fb0}
+.seg-chip.c-fat u{background:#4da892}.seg-chip.c-free u{background:#2f3a44}
+.dev-aside{text-align:right;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.cap{font:600 18px/1 var(--mono);letter-spacing:-.02em}
+.cap span{font-size:11px;color:var(--dim);font-weight:400;margin-left:3px}
+.dev-act{display:flex;gap:6px}
+.emptybox{border:1px dashed #2b3641;border-radius:13px;padding:38px 20px;text-align:center;color:#a9b6c1;background:#11171d;font-size:13px;line-height:1.8}
+.hintline{color:var(--dim);font-size:12px;margin-top:14px;display:flex;gap:8px;align-items:flex-start}
+.hintline b{color:#b9c6cf;font-weight:600}
+
+/* ================= 卡片与表单 ================= */
+.grid2{display:grid;grid-template-columns:minmax(0,1.28fr) minmax(0,1fr);gap:18px;align-items:start}
+.panel{border:1px solid var(--line);border-radius:13px;background:linear-gradient(180deg,#171f26,#141b21);padding:18px 20px}
+.panel h3{margin:0 0 16px;font-size:13.5px;font-weight:650;color:#dbe4ea;display:flex;align-items:center;gap:8px}
+.panel h3 i{width:3px;height:12px;border-radius:2px;background:var(--amber);display:block;flex:none}
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:7px}
+.field input,.field select{width:100%;padding:10px 12px;border-radius:9px;border:1px solid #2b3742;background:#0f151a;
+  font-family:var(--mono);font-size:12.5px;transition:border-color .15s,box-shadow .15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px #eaa53f1f}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.chip{display:flex;flex-direction:column;gap:3px;padding:9px 11px;border-radius:9px;border:1px solid #2b3742;
+  background:#121920;font:12.5px var(--mono);color:#b7c4ce;text-align:left;transition:.15s}
+.chip small{font:10.5px/1.35 var(--sans);color:var(--dim)}
+.chip:hover:not(.off){border-color:#42525f;background:#161e26}
+.chip[aria-pressed=true]{border-color:var(--amber);background:#241d12;color:#f6cd8c;box-shadow:inset 0 0 0 1px #eaa53f40}
+.chip[aria-pressed=true] small{color:#a98b52}
+.chip.off{opacity:.35;cursor:not-allowed}
+.seg{display:inline-flex;border:1px solid #2b3742;border-radius:9px;overflow:hidden;background:#0f151a}
+.seg button{padding:8px 15px;font-size:12.5px;background:transparent;color:#a4b1bc;border-right:1px solid #232e38;transition:.15s}
+.seg button:last-child{border-right:0}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed=true]{background:#241d12;color:#f6cd8c}
+.warn{border:1px solid #4e2f26;border-radius:12px;padding:14px 16px;background:linear-gradient(180deg,#1e1512,#191210);
+  color:#eab3a5;font-size:12.5px;line-height:1.75;display:flex;gap:11px}
+.warn svg{width:17px;height:17px;flex:none;stroke:#e06753;margin-top:2px}
+.warn strong{color:#ffcfc3;font-weight:650}
+.footbar{display:flex;gap:10px;align-items:center;margin-top:18px;padding-top:16px;border-top:1px solid #222c35}
+.footbar .spacer{flex:1}
+.preview{border:1px solid var(--line);border-radius:13px;padding:16px 18px;background:linear-gradient(180deg,#171f26,#141b21)}
+.preview .t{font-size:11.5px;color:var(--muted);letter-spacing:.04em}
+.preview .n{font-size:14px;font-weight:650;margin:6px 0 2px}
+.preview .p{font:11.5px var(--mono);color:var(--dim);word-break:break-all}
+.taskitem{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #222c35;font-size:12.5px}
+.taskitem:last-child{border-bottom:0}
+
+/* ================= APFS / 表格 ================= */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.toolbar select{min-width:330px;padding:9px 12px;border-radius:9px;border:1px solid #2b3742;background:#0f151a;
+  font-family:var(--mono);font-size:12.5px}
+.volcard{border:1px solid var(--line);border-radius:12px;padding:15px 18px;margin-bottom:11px;background:linear-gradient(180deg,#171f26,#141b21);
+  display:flex;align-items:center;justify-content:space-between;gap:18px}
+.volcard .nm{font-size:14px;font-weight:650;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.volcard .meta{font:11.5px/1.8 var(--mono);color:var(--dim);margin-top:5px}
+.crumb{display:flex;gap:5px;align-items:center;margin:4px 0 12px;font:12px var(--mono);flex-wrap:wrap;color:var(--dim)}
+.crumb button{color:var(--blue);padding:2px 6px;border-radius:5px}
+.crumb button:hover{background:#16202a}
+.tbl{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#151c23}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th{text-align:left;font-size:11.5px;color:#8b98a3;font-weight:650;letter-spacing:.08em;
+  padding:12px 18px;background:#131a20;border-bottom:1px solid var(--line)}
+td{padding:12px 18px;border-bottom:1px solid #1f2831;font-size:13.5px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:#182129}
+.bar-usage{height:5px;border-radius:3px;background:#202b35;overflow:hidden;margin-top:6px}
+.bar-usage i{display:block;height:100%;background:linear-gradient(90deg,#4f7f9c,#6fa8cf)}
+.bar-usage.amber i{background:linear-gradient(90deg,#cf8c2c,#f5bd58)}
+.mntcard{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 15px;border:1px solid var(--line);
+  border-radius:11px;background:#151c23;margin-bottom:9px}
+.mntcard:last-child{margin-bottom:0}
+.mntcard .t1{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.mntcard .t2{font:12px/1.7 var(--mono);color:#8794a0;word-break:break-all;margin-top:3px}
+.mntcard .acts{display:flex;gap:6px;flex:none}
+.volcard .body{flex:1;min-width:0}
+.volcard .acts{display:flex;gap:7px;flex:none}
+.usage-line{font:12px/1.85 var(--mono);color:#aebbc5;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
+.usage-line b{color:#dfe7ec;font-weight:500}
+.snapbar{display:flex;align-items:center;gap:8px}
+.snapbar select{min-width:200px;padding:7px 10px;border-radius:8px;border:1px solid #2b3742;background:#0f151a;font-family:var(--mono);font-size:12px}
+
+/* ================= 弹窗 / 提示 ================= */
+.scrim{position:fixed;inset:0;background:#070a0dd9;display:none;place-items:center;z-index:30}
+.scrim.open{display:grid}
+.modal{width:min(660px,92vw);background:linear-gradient(180deg,#18212a,#141b21);border:1px solid #3a4854;
+  border-radius:15px;box-shadow:0 30px 80px #000b;padding:24px}
+.modal h3{margin:0 0 5px;font-size:16.5px;letter-spacing:-.01em}
+.modal .sub{color:var(--muted);font-size:12.5px;margin-bottom:18px}
+.modal .row{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px solid #222c35;font-size:12.5px}
+.modal .row span{color:var(--muted);flex:none}
+.modal .row b{font-family:var(--mono);font-weight:500;text-align:right;word-break:break-all}
+.modal .end{display:flex;gap:9px;justify-content:flex-end;margin-top:20px}
+.progress{height:7px;border-radius:4px;background:#1c262f;overflow:hidden}
+.progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,#cf8c2c,#f5bd58);transition:width .3s}
+.logbox{height:180px;overflow:auto;background:#0b1015;border:1px solid #202932;border-radius:9px;padding:11px 13px;
+  font:11.5px/1.75 var(--mono);color:#9aa8b3}
+.logbox .er{color:#f2a294}.logbox .ok{color:#79d8b4}
+.toasts{position:fixed;right:20px;bottom:18px;display:flex;flex-direction:column;gap:9px;z-index:40}
+.toast{padding:11px 15px;border-radius:10px;background:#1c2630;border:1px solid #3a4854;font-size:12.5px;
+  max-width:420px;box-shadow:0 12px 30px -12px #000c;animation:rise .22s}
+.toast.ok{border-color:#2c5748;background:#13211c;color:#a9e8d1}
+.toast.err{border-color:#5a3129;background:#1d1311;color:#f4b8ab}
+
+@media (max-width:940px){
+  .shell{grid-template-columns:1fr}
+  .rail{flex-direction:row;align-items:center;padding:12px;overflow-x:auto;border-right:0;border-bottom:1px solid #1e262e}
+  .brand{border:0;margin:0;padding:0 12px 0 0}
+  .nav{flex-direction:row}.nav .cap{display:none}
+  .nav button{white-space:nowrap}
+  .nav button[aria-current="page"]::before{display:none}
+  .sysblock,.rail .spacer{display:none}
+  .metrics{grid-template-columns:1fr}
+  .metric+.metric::before{display:none}
+  .metric+.metric{border-top:1px solid #232e38}
+  .grid2{grid-template-columns:1fr}
+  .dev{grid-template-columns:42px minmax(0,1fr)}
+  .dev-aside{grid-column:1/-1;flex-direction:row;justify-content:space-between;align-items:center;width:100%}
+  .chips{grid-template-columns:repeat(2,1fr)}
+}
+.duhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.duhead h3{font-size:13.5px;font-weight:650;margin:0}
+.dubody{display:block}
+.dugroup{border-left:2px solid var(--line3);padding-left:12px;margin-top:10px}
+.duvol{padding:8px 0;border-bottom:1px dashed var(--line)}
+.duvol .nm{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.duvol .meta{font-size:11px;margin-top:3px}
+.ducheck{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line)}
+.ducheck:last-child{border-bottom:none}
+.dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.field label{font-size:11.5px;color:var(--dim)}
+.field input,.field select{padding:7px 10px;border-radius:8px;border:1px solid var(--line2);background:#121920;color:var(--text);font-size:12.5px}
+.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+.planrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+.planrow:last-child{border-bottom:none}
+.btn.danger{border-color:#5c2f33;background:#2a1719;color:#e8a1a1}
+.btn.danger:hover{background:#332025}
+.partbar{display:flex;gap:2px;height:10px;border-radius:6px;overflow:hidden;background:#141b21;margin-bottom:12px}
+.partbar i{display:block;height:100%}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <div class="mark">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#eaa53f" stroke-width="1.6"><ellipse cx="12" cy="6.2" rx="7" ry="2.6"/><path d="M5 6.2v5.4c0 1.44 3.13 2.6 7 2.6s7-1.16 7-2.6V6.2"/><path d="M5 11.6v5.4c0 1.44 3.13 2.6 7 2.6s7-1.16 7-2.6v-5.4"/></svg>
+      </div>
+      <div>
+        <h1>U盘硬盘格式化工具</h1>
+        <small id="verLine">v27H01 · 本地运行 · 支持预览与挂载</small>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="cap">导航</div>
+      <button data-page="overview" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4.5" width="18" height="6.5" rx="2"/><rect x="3" y="13" width="18" height="6.5" rx="2"/></svg>
+        磁盘概览
+      </button>
+      <button data-page="format">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 20h16"/><path d="M7 16.5V8.5m5 8V5m5 11.5V9.5"/></svg>
+        格式化
+      </button>
+      <button data-page="apfs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="6" rx="9" ry="2.8"/><path d="M3 6v5.2c0 1.6 4 2.8 9 2.8s9-1.2 9-2.8V6"/><path d="M3 11.2v6c0 1.6 4 2.8 9 2.8s9-1.2 9-2.8v-6"/></svg>
+        读取 APFS
+      </button>
+      <button data-page="diskutil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><circle cx="6" cy="6.5" r=".8"/><path d="M8 13.5h8M8 16.5h5"/></svg>
+        磁盘工具
+      </button>
+      <button data-page="partition">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4.5" width="18" height="15" rx="1.8"/><path d="M3 10.5h18"/><path d="M11 4.5v6M7 10.5v9"/></svg>
+        分区管理
+      </button>
+      <button data-page="mount">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3.5v11.5"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M4 20h16"/></svg>
+        挂载管理
+      </button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="sysblock">
+      <div class="k">权限</div>
+      <div class="v"><span class="led" id="ledAdmin"></span><span id="adminLine">检测中…</span></div>
+    </div>
+    <div class="sysblock">
+      <div class="k">运行方式</div>
+      <div class="v"><span class="led"></span><span>纯本地 · 不联网 · 无端口</span></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="head">
+      <div>
+        <h2 id="pageTitle">磁盘概览</h2>
+        <p id="pageDesc">列出本机物理磁盘与分区表概要，识别 U 盘、移动硬盘与 APFS 盘</p>
+      </div>
+      <div class="actions" id="headActions"></div>
+    </header>
+
+    <div class="content">
+      <!-- ===== 概览 ===== -->
+      <section class="page active" data-page="overview">
+        <div id="adminBanner" style="display:none;margin-bottom:18px" class="warn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M12 3.5 3.5 20h17L12 3.5Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".9"/></svg>
+          <div>当前以普通权限运行，格式化与挂载会被系统拒绝。
+            <button class="btn sm" id="btnElevate" style="margin-left:8px">以管理员身份重启</button></div>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="lbl"><i></i>物理磁盘</div><div class="num" id="stDisks">–<em>块</em></div><div class="sub">含系统盘与移动设备</div></div>
+          <div class="metric"><div class="lbl"><i></i>可识别分区</div><div class="num" id="stParts">–<em>个</em></div><div class="sub">按分区表实际条目计</div></div>
+          <div class="metric warm"><div class="lbl"><i></i>APFS 磁盘</div><div class="num" id="stApfs">–<em>块</em></div><div class="sub">可直接浏览与导出文件</div></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin:0 0 12px">
+          <label style="display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--muted);cursor:pointer">
+            <input type="checkbox" id="onlyApfs" style="width:auto"> 只看带 APFS 的盘
+          </label>
+          <span class="dim" style="font-size:12px">（选中后列表只保留能浏览/导出的磁盘）</span>
+        </div>
+        <div class="devlist" id="devRows"><div class="emptybox">正在扫描本机磁盘…</div></div>
+        <div class="hintline"><span>—</span><span>分区表直接读磁盘扇区解析（GPT / MBR），不依赖系统是否分配盘符；<b>系统盘默认禁止格式化</b>。</span></div>
+      </section>
+
+      <!-- ===== 格式化 ===== -->
+      <section class="page" data-page="format">
+        <div class="grid2">
+          <div class="panel">
+            <h3><i></i>目标与文件系统</h3>
+            <div class="field">
+              <label>目标设备</label>
+              <select id="fmtDev"></select>
+            </div>
+            <div class="field">
+              <label>文件系统</label>
+              <div class="chips" id="fsChips"></div>
+            </div>
+            <div class="field">
+              <label>卷标（可留空）</label>
+              <input type="text" id="fmtLabel" maxlength="32" placeholder="例如 BACKUP">
+            </div>
+            <div class="field">
+              <label>模式</label>
+              <div class="seg" id="fmtMode">
+                <button data-mode="quick" aria-pressed="true">快速格式化</button>
+                <button data-mode="full" aria-pressed="false">完整格式化</button>
+              </div>
+            </div>
+            <div class="footbar">
+              <span class="dim" style="font-size:11.5px">执行时调用本机 diskpart</span>
+              <div class="spacer"></div>
+              <button class="btn primary" id="btnFmt">开始格式化</button>
+            </div>
+          </div>
+          <div>
+            <div class="preview" id="fmtPreview">
+              <div class="t">即将重建的目标盘</div>
+              <div class="n">—</div>
+              <div class="p">—</div>
+              <div class="map" id="fmtMap"></div>
+              <div class="legend" id="fmtLegend"></div>
+            </div>
+            <div class="warn" style="margin-top:16px">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M12 3.5 3.5 20h17L12 3.5Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".9"/></svg>
+              <div><strong>会清空整块磁盘上的所有分区与数据</strong>，不可恢复。请先核对容量与型号是否为你插入的那只盘。</div>
+            </div>
+            <div class="panel" style="margin-top:16px">
+              <h3><i></i>最近任务</h3>
+              <div id="taskList" class="muted" style="font-size:12.5px">暂无任务</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== APFS ===== -->
+      <section class="page" data-page="apfs">
+        <div class="toolbar">
+          <select id="apfsDev"></select>
+          <button class="btn" id="btnApfsScan">扫描容器与卷</button>
+          <span class="dim" id="apfsHint" style="font-size:12px"></span>
+        </div>
+        <div id="apfsVols"></div>
+        <div id="apfsBrowser" style="display:none;margin-top:18px">
+          <div class="toolbar" id="apfsBar"></div>
+          <div id="apfsTable"></div>
+        </div>
+        <div class="hintline" style="margin-top:16px"><span>—</span><span>选中磁盘 → 扫描容器与卷 → 打开卷浏览目录，文件可「导出」到本机下载目录；<b>加密卷需先输入 FileVault 密码</b>。</span></div>
+      </section>
+
+      <!-- ===== 分区管理 ===== -->
+      <section class="page" data-page="partition">
+        <div class="toolbar">
+          <select id="ptDev"></select>
+          <button class="btn" id="btnPtReload">读取分区表</button>
+          <span class="dim" style="font-size:12px">分区表 <b id="ptStyle" class="mono">—</b> · 容量 <b id="ptSize" class="mono">—</b> · 扇区 <b id="ptSec" class="mono">—</b></span>
+        </div>
+        <div class="partbar" id="ptBar"></div>
+        <div id="ptTable"></div>
+
+        <div class="grid2" style="margin-top:18px">
+          <div class="panel">
+            <div class="duhead"><h3>把操作加入计划</h3><span class="tag">先排计划，再一次性执行</span></div>
+            <div class="dubody">
+              <div class="formgrid">
+              <div class="field"><label>起始位置</label><select id="ptGap"><option value="0">自动</option></select></div>
+              <div class="field"><label>大小（MB，0 = 全部剩余）</label><input id="ptSizeMB" class="mono" placeholder="例如 51200"></div>
+              <div class="field"><label>文件系统</label><select id="ptFs"><option value="ntfs">NTFS</option><option value="exfat">exFAT</option><option value="fat32">FAT32</option><option value="refs">ReFS</option></select></div>
+              <div class="field"><label>卷标</label><input id="ptLabel" placeholder="可留空"></div>
+              <div class="field"><label>盘符（可留空）</label><input id="ptLetter" class="mono" maxlength="1" placeholder="E"></div>
+              <div class="field"><label>簇大小（KB，0 = 默认）</label><input id="ptCluster" class="mono" placeholder="0"></div>
+              <label class="chk"><input type="checkbox" id="ptQuick" checked> 快速格式化</label>
+              </div>
+              <div class="toolbar" style="margin-top:12px;flex-wrap:wrap">
+                <button class="btn" id="btnPtCreate">＋ 新建分区</button>
+                <button class="btn ghost" id="btnPtFormatOne">格式化分区</button>
+                <button class="btn ghost" id="btnPtDelete">删除分区</button>
+              </div>
+              <div class="field" style="margin-top:10px"><label>目标分区编号（上面表格的序号）</label><input id="ptPartNo" class="mono" placeholder="2"></div>
+              <div class="field"><label>收缩大小（MB）</label><input id="ptShrinkMB" class="mono" placeholder="10240"></div>
+              <div class="toolbar" style="margin-top:10px;flex-wrap:wrap">
+                <button class="btn ghost" id="btnPtResize">－ 收缩</button>
+                <button class="btn ghost" id="btnPtExtend">＋ 扩展</button>
+              </div>
+              <div class="field" style="margin-top:12px"><label>分区类型标记（GPT，仅改类型、不动数据）</label>
+                <div class="toolbar">
+                  <select id="ptTag"><option value="apfs">APFS</option><option value="hfsplus">HFS+</option><option value="recovery">Apple 恢复</option><option value="efi">EFI 系统</option><option value="msdata">Microsoft 数据</option></select>
+                  <button class="btn ghost" id="btnPtTag">标记分区</button>
+                </div></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="duhead"><h3>执行计划</h3><button class="btn" id="btnPtRun">执行</button></div>
+            <div id="ptPlan"></div>
+              <div class="field" style="margin-top:14px"><label>分区表转换（磁盘需为空）</label>
+                <div class="toolbar"><select id="ptConvert"><option value="gpt">GPT</option><option value="mbr">MBR</option></select>
+                <button class="btn ghost" id="btnPtConvert">转换</button></div></div>
+              <div class="toolbar" style="margin-top:12px">
+                <button class="btn danger" id="btnPtClean">清空磁盘</button>
+                <button class="btn danger" id="btnPtCleanAll">完整清零</button>
+              </div>
+            <div class="warn" style="margin-top:12px"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><path d="M12 3.5 3.5 20h17L12 3.5Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".9"/></svg>
+              <div>执行不可逆，会清掉目标分区数据。执行前需输入该磁盘编号二次确认。</div></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:18px">
+          <div class="duhead"><h3>一键抹掉 / 一键分区（APFS）</h3><span class="tag">对齐 macOS 磁盘工具「抹掉」</span></div>
+          <div class="dubody">
+            <div class="formgrid">
+              <div class="field"><label>分区大小（MB，0 = 整盘一个分区）</label><input id="qkSize" class="mono" placeholder="0"></div>
+              <div class="field"><label>卷名（在 Mac 抹掉时写入）</label><input id="qkName" placeholder="MyDisk"></div>
+              <div class="field"><label>APFS 模板（可留空）</label><input id="qkImg" class="mono" placeholder="E:\apfs-blank.img"></div>
+              <div class="field"><label>&nbsp;</label><button class="btn danger" id="btnQkRun">一键抹掉为 APFS</button></div>
+            </div>
+            <div class="hintline" style="margin-top:4px"><span>—</span><span>清空 → 转 GPT → 建分区 → 标记 APFS →（有模板则写入模板）。整盘数据将被清除。</span></div>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:18px">
+          <div class="duhead"><h3>APFS 模板还原（在 Windows 上落地真正的 APFS 容器）</h3><span class="tag">Mac 生成一次 · 之后无限复用</span></div>
+          <div class="dubody">
+            <div class="formgrid">
+              <div class="field"><label>模板镜像路径（.img，必须由 macOS 生成）</label><input id="tplPath" class="mono" placeholder="E:\apfs-blank.img"></div>
+              <div class="field"><label>写入起始偏移（MB，选目标分区起点）</label><input id="tplOffMB" class="mono" placeholder="1"></div>
+            </div>
+            <div class="toolbar" style="margin-top:6px">
+              <button class="btn ghost" id="btnTplCheck">校验模板</button>
+              <button class="btn" id="btnTplRun">开始还原</button>
+              <span class="dim" id="tplHint" style="font-size:12px"></span>
+            </div>
+            <div id="tplInfo" style="margin-top:10px"></div>
+            <div id="tplProg" style="display:none;margin-top:12px">
+              <div class="bar-usage"><i id="tplBar" style="width:0%"></i></div>
+              <div class="dim mono" id="tplPct" style="font-size:11.5px;margin-top:6px"></div>
+              <pre class="mono dim" id="tplLog" style="white-space:pre-wrap;font-size:11px;line-height:1.65;max-height:180px;overflow:auto"></pre>
+            </div>
+          </div>
+        </div>
+        <div id="ptOut" style="margin-top:16px"></div>
+        <div class="hintline" style="margin-top:14px"><span>—</span><span>Windows 用系统自带 diskpart 执行；新建分区默认 1 MiB 对齐；Windows 无法格式化 APFS/HFS+，可把分区标记为 Apple 类型后交给 Mac 的磁盘工具抹掉。</span></div>
+      </section>
+
+      <!-- ===== 磁盘工具 ===== -->
+      <section class="page" data-page="diskutil">
+        <div class="toolbar">
+          <select id="duDev"></select>
+          <button class="btn" id="btnDuLoad">读取磁盘信息</button>
+          <span class="dim" id="duHint" style="font-size:12px">型号 / 健康 / 容器与卷组一次性读出</span>
+        </div>
+        <div id="duMedia"></div>
+        <div id="duTree" style="margin-top:16px"></div>
+        <div class="toolbar" style="margin-top:18px">
+          <select id="duVol"></select>
+          <button class="btn" id="btnDuVerify">验证卷（只读）</button>
+          <button class="btn" id="btnDuSpace">空间分布</button>
+        </div>
+        <div id="duResult"></div>
+        <div class="hintline" style="margin-top:16px"><span>—</span><span>「验证」只做检查、不修复也不写入；空间分布按顶层目录与文件类型统计，均来自只读解析。</span></div>
+      </section>
+
+      <!-- ===== 挂载 ===== -->
+      <section class="page" data-page="mount">
+        <div class="toolbar">
+          <select id="mntDev"></select>
+          <button class="btn" id="btnMount">挂载为盘符</button>
+          <button class="btn ghost" id="btnMountsRefresh">刷新列表</button>
+        </div>
+        <div class="tbl">
+          <table>
+            <thead><tr><th style="width:32%">挂载点</th><th style="width:14%">文件系统</th><th style="width:28%">容量 / 可用</th><th style="width:12%">读写</th><th style="width:14%">操作</th></tr></thead>
+            <tbody id="mntRows"><tr><td colspan="5">加载中…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="panel" style="margin-top:20px">
+          <h3><i></i>APFS 只读挂载点 <span class="dim" style="font-weight:400;font-size:11.5px">导出镜像目录 · 资源管理器直接打开</span></h3>
+          <div id="apfsMntRows"><div class="dim" style="font-size:12.5px">暂无挂载点：在「读取 APFS」的卷卡上点「挂载到此电脑」</div></div>
+        </div>
+        <div class="hintline" style="margin-top:14px"><span>—</span><span>卸载后再拔盘可避免缓存未写完导致的数据损坏；<b>系统盘不提供卸载</b>。APFS 只读挂载点是导出的镜像目录（非内核驱动盘符），可在资源管理器里直接浏览复制。</span></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"><div class="modal" id="modal"></div></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ===== 与 Go 绑定（未在应用内运行时用示例数据预览） ===== */
+const HAS_APP = typeof window.apiScan === "function";
+const api = {
+  scan: () => HAS_APP ? window.apiScan() : Promise.resolve(JSON.stringify({ok:true,data:MOCK.scan})),
+  support: () => HAS_APP ? window.apiSupport() : Promise.resolve(JSON.stringify({ok:true,data:MOCK.support})),
+  format: (d,f,m,l) => HAS_APP ? window.apiFormat(d,f,m,l) : Promise.resolve(JSON.stringify({ok:true,data:{task:"T001"}})),
+  task: id => HAS_APP ? window.apiTask(id) : Promise.resolve(JSON.stringify({ok:true,data:(id==="T002"?MOCK.exportTask:MOCK.task)})),
+  partTable: d => HAS_APP ? window.apiPartTable(d) : Promise.resolve(JSON.stringify({ok:true,data:MOCK.partTable||{}})),
+  apfsQuick: (d,s,i,n,c) => HAS_APP ? window.apiApfsQuick(d,s,i,n,c) : Promise.resolve(JSON.stringify({ok:true,data:"T901"})),
+  apfsTemplateInfo: p => HAS_APP ? window.apiApfsTemplateInfo(p) : Promise.resolve(JSON.stringify({ok:true,data:{uuid:"demo",block_size:4096,capacity:104857600,volumes:["Blank"]}})),
+  apfsApplyTemplate: (d,i,o,c) => HAS_APP ? window.apiApfsApplyTemplate(d,i,o,c) : Promise.resolve(JSON.stringify({ok:true,data:"T900"})),
+  partTag: (d,p,k,c) => HAS_APP ? window.apiPartTag(d,p,k,c) : Promise.resolve(JSON.stringify({ok:true,data:{ok:true,guid:"",label:"演示",output:"演示模式"}})),
+  partExec: (d,a,c) => HAS_APP ? window.apiPartExec(d,a,c) : Promise.resolve(JSON.stringify({ok:true,data:{ok:true,code:0,script:"",output:"演示模式"}})),
+  partFormatOne: (d,p,f,l,m,c) => HAS_APP ? window.apiPartFormatOne(d,p,f,l,m,c) : Promise.resolve(JSON.stringify({ok:true,data:{ok:true,code:0,script:"",output:"演示模式"}})),
+  duMedia: d => HAS_APP ? window.apiDuMedia(d) : Promise.resolve(JSON.stringify({ok:true,data:(MOCK.duMedia||{})})),
+  duTree: d => HAS_APP ? window.apiDuTree(d) : Promise.resolve(JSON.stringify({ok:true,data:(MOCK.duTree||{container:{},groups:[],volumes:[]})})),
+  duVerify: (d,o,i) => HAS_APP ? window.apiDuVerify(d,o,i) : Promise.resolve(JSON.stringify({ok:true,data:{checks:[],verdict:"ok"}})),
+  duSpace: (d,o,i,s) => HAS_APP ? window.apiDuSpace(d,o,i,s) : Promise.resolve(JSON.stringify({ok:true,data:{total:0,dirs:[],kinds:[]}})),
+  apfsDevices: () => HAS_APP ? window.apiApfsDevices() : Promise.resolve(JSON.stringify({ok:true,data:MOCK.scan.disks})),
+  apfsVolumes: d => HAS_APP ? window.apiApfsVolumes(d) : Promise.resolve(JSON.stringify({ok:true,data:MOCK.vols})),
+  apfsList: (d,o,i,p,sn) => HAS_APP ? window.apiApfsList(d,o,i,p,sn||"") : Promise.resolve(JSON.stringify({ok:true,data:MOCK.dir})),
+  apfsInfo: (d,o,i) => HAS_APP ? window.apiApfsInfo(d,o,i) : Promise.resolve(JSON.stringify({ok:true,data:MOCK.info})),
+  apfsSnapshots: (d,o,i) => HAS_APP ? window.apiApfsSnapshots(d,o,i) : Promise.resolve(JSON.stringify({ok:true,data:MOCK.snaps})),
+  apfsExport: (d,o,i,p,sn) => HAS_APP ? window.apiApfsExport(d,o,i,p,sn||"") : Promise.resolve(JSON.stringify({ok:true,data:{task:"T002"}})),
+  apfsMounts: () => HAS_APP ? window.apiApfsMounts() : Promise.resolve(JSON.stringify({ok:true,data:MOCK.apfsMounts})),
+  apfsMountDrop: id => HAS_APP ? window.apiApfsMountDrop(id) : Promise.resolve(JSON.stringify({ok:true,data:{id}})),
+  apfsFileInfo: (d,o,i,p,f) => HAS_APP ? window.apiApfsFileInfo(d,o,i,p,f) : Promise.resolve(JSON.stringify({ok:true,data:{}})),
+  apfsSearch: (d,o,i,k,f) => HAS_APP ? window.apiApfsSearch(d,o,i,k,f) : Promise.resolve(JSON.stringify({ok:true,data:{results:[]}})),
+  apfsBigFiles: (d,o,i,f) => HAS_APP ? window.apiApfsBigFiles(d,o,i,f) : Promise.resolve(JSON.stringify({ok:true,data:{files:[]}})),
+  apfsDiff: (d,o,i,a,b,p) => HAS_APP ? window.apiApfsDiff(d,o,i,a,b,p) : Promise.resolve(JSON.stringify({ok:true,data:{added:[],removed:[],changed:[]}})),
+  apfsUnlock: (d,o,p,f) => HAS_APP ? window.apiApfsUnlock(d,o,p,f) : Promise.resolve(JSON.stringify({ok:true,data:{unlocked:true}})),
+  apfsDownload: (d,o,i,p,sn) => HAS_APP ? window.apiApfsDownload(d,o,i,p,sn||"") : Promise.resolve(JSON.stringify({ok:true,data:{path:"C:\\Users\\me\\Downloads\\file",size:734003200}})),
+  mounts: () => HAS_APP ? window.apiMounts() : Promise.resolve(JSON.stringify({ok:true,data:MOCK.mounts})),
+  mount: d => HAS_APP ? window.apiMount(d) : Promise.resolve(JSON.stringify({ok:true,data:{target:"E:"}})),
+  unmount: t => HAS_APP ? window.apiUnmount(t) : Promise.resolve(JSON.stringify({ok:true,data:{target:t}})),
+  open: p => HAS_APP ? window.apiOpen(p) : Promise.resolve(JSON.stringify({ok:true,data:{path:p}})),
+  elevate: () => HAS_APP ? window.apiElevate() : Promise.resolve(JSON.stringify({ok:true,data:{elevated:true}}))
+};
+api.preview = (d,o,i,p,sn) => HAS_APP ? window.apiApfsPreview(d,o,i,p,sn||"") : Promise.resolve(JSON.stringify({ok:true,data:{url:"",kind:"text",name:"demo.txt",size:1234,local:""}}));
+api.apfsMount = (d,o,i,letter,sn) => HAS_APP ? window.apiApfsMount(d,o,i,letter||"",sn||"") : Promise.resolve(JSON.stringify({ok:true,data:{id:"m1",target:"E:",dir:""}}));
+api.doctor = () => HAS_APP ? window.apiDoctor() : Promise.resolve(JSON.stringify({ok:true,data:{text:"模拟诊断",engine:"mock"}}));
+api.apfsMountSet = (id,letter,auto,rebuild) => HAS_APP ? window.apiApfsMountSet(id,letter,auto,rebuild) : Promise.resolve(JSON.stringify({ok:true,data:{id:id,letter:letter,auto:auto}}));
+
+async function call(fn, ...args){
+  try{
+    const r = JSON.parse(await fn(...args));
+    if(r && r.ok === false) throw new Error(r.error || "操作失败");
+    return r ? r.data : null;
+  }catch(e){ throw new Error(String(e.message || e)); }
+}
+</script>
+<script>
+/* ===== 示例数据（只在浏览器预览时使用） ===== */
+const MOCK = {
+  scan:{platform:"windows",version:"26H31",admin:true,apfsCount:1,
+    disks:[
+      {name:"sda",path:"\\\\.\\PhysicalDrive0",size:512110190592,model:"Samsung SSD 980 PRO 1TB",tran:"nvme",system:true,table:"GPT",
+       parts:[{index:1,type:"EFI System",fs:"fat32",size:104857600},{index:2,type:"Microsoft reserved",fs:"",size:16777216},{index:3,type:"Microsoft basic data",fs:"ntfs",size:511994249216}]},
+      {name:"sdb",path:"\\\\.\\PhysicalDrive2",size:64148043776,model:"SanDisk Extreme 64GB",tran:"usb",system:false,table:"GPT",
+       parts:[{index:1,type:"APFS",fs:"apfs",size:62000000000}],apfs:true}
+    ]},
+  support:{fs:[
+    {id:"ntfs",name:"NTFS",note:"Windows 原生",available:true},
+    {id:"exfat",name:"exFAT",note:"U 盘首选",available:true},
+    {id:"fat32",name:"FAT32",note:"单文件 4GB 上限",available:true},
+    {id:"fat16",name:"FAT16",note:"老设备兼容",available:true},
+    {id:"hfsplus",name:"HFS+",note:"macOS 旧格式",available:true},
+    {id:"apfs",name:"APFS",note:"macOS 磁盘格式",available:true}]},
+  task:{id:"T001",device:"\\\\.\\PhysicalDrive2",fs:"exfat",label:"BACKUP",mode:"quick",status:"running",stage:"写入分区表",progress:.42,
+    log:[{ts:"21:03:11",level:"info",msg:"diskpart: select disk 2"},{ts:"21:03:12",level:"info",msg:"已创建 GPT 分区表"},{ts:"21:03:14",level:"info",msg:"格式化 exFAT，卷标 BACKUP"}]},
+  vols:{volumes:[{dev:"\\\\.\\PhysicalDrive2",offset:0,fs_oid:1234,name:"Macintosh HD",encrypted:true,unlocked:false}],diag:{}},
+  dir:{name:"Macintosh HD",path:"/",entries:[
+    {name:"Documents",type:"dir",size:0,mtime:0},
+    {name:"Photos",type:"dir",size:0,mtime:0},
+    {name:"备份.tar.gz",type:"file",size:734003200,mtime:1794000000}]},
+  mounts:[{target:"C:\\",fstype:"ntfs",ro:false,usage:{size:512110190592,used:231928233984,avail:280181956608},device:"\\\\.\\PhysicalDrive0",can_unmount:false}],
+  info:{name:"Macintosh HD",fs_oid:1234,offset:0,capacity:62000000000,used:21400000000,free:40600000000,
+    block_size:4096,files:184320,dirs:12480,snapshots:3,encrypted:true,unlocked:false},
+  snaps:{snapshots:[
+    {name:"com.apple.TimeMachine.2026-11-08-10:00:00.local",xid:1844612,sblock_oid:0,created:1794093600},
+    {name:"com.apple.os.update-3B7E1F",xid:1844480,sblock_oid:0,created:1793834400}],note:""},
+  exportTask:{id:"T002",device:"\\\\.\\PhysicalDrive2",fs:"apfs",label:"Macintosh HD",mode:"export",status:"done",stage:"完成",progress:1,
+    log:[{ts:"21:20:01",level:"info",msg:"目标目录: C:\\Users\\me\\Downloads\\Macintosh HD_导出"},{ts:"21:20:09",level:"ok",msg:"导出完成：184320 个文件 / 20.0 GB"}]},
+  apfsMounts:[{id:"M1",volume:"Macintosh HD",device:"\\\\.\\PhysicalDrive2",dir:"C:\\Users\\me\\Downloads\\Macintosh HD_导出",
+    files:184320,bytes:21400000000,at:1794201600,state:"ok"}]
+};
+</script>
+<script>
+const S={scan:null,support:null,fs:"exfat",mode:"quick",taskId:null,timer:null,apfs:[],vol:null,dev:null};
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+
+function fmtBytes(n){
+  if(n===null||n===undefined||n<0) return "—";
+  const u=["B","KB","MB","GB","TB"]; let i=0,v=n||0;
+  while(v>=1024&&i<u.length-1){v/=1024;i++;}
+  return (i===0?v:v.toFixed(v<10?1:0))+" "+u[i];
+}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+function toast(msg,kind){
+  const el=document.createElement("div"); el.className="toast "+(kind||""); el.textContent=msg;
+  $("#toasts").appendChild(el); setTimeout(()=>el.remove(),kind==="err"?5200:2800);
+}
+function fsClass(fs,type){
+  const s=(fs||"").toLowerCase(), t=(type||"").toLowerCase();
+  if(s==="apfs"||t.includes("apfs")) return "c-apfs";
+  if(s==="ntfs"||t.includes("basic data")) return "c-ntfs";
+  if(s.startsWith("fat")||s==="exfat") return "c-fat";
+  if(!s) return "c-other";
+  return "c-other";
+}
+function partMap(d){
+  const total=d.size||0, parts=d.parts||[];
+  let used=0; const segs=[];
+  parts.forEach(p=>{
+    const w=total>0? Math.max(0,(p.size/total)*100):0;
+    used+=p.size||0;
+    if(w>0.6) segs.push('<i class="'+fsClass(p.fs,p.type)+'" style="width:'+w.toFixed(2)+'%"></i>');
+  });
+  const free=total>0?Math.max(0,100-(used/total)*100):0;
+  if(free>0.6) segs.push('<i class="c-free" style="width:'+free.toFixed(2)+'%"></i>');
+  return segs.join("");
+}
+function legendOf(parts){
+  const out=[]; (parts||[]).forEach(p=>{
+    if(out.length>=6) return;
+    const label=(p.letter?p.letter+": ":(p.fs?("#"+p.index+" "):""))+(p.fs||p.type||(p.letter?"":"未使用"));
+    out.push('<span class="seg-chip '+fsClass(p.fs,p.type)+'"><u></u>'+esc(label)+'</span>');
+  });
+  return out.join("");
+}
+
+/* ===== 页面 ===== */
+const PAGES={
+  overview:{t:"磁盘概览",d:"列出本机物理磁盘与分区表概要，识别 U 盘、移动硬盘与 APFS 盘"},
+  format:{t:"格式化",d:"对整块磁盘重建分区表并格式化，操作不可撤销"},
+  apfs:{t:"读取 APFS",d:"内置纯软件 APFS 解析引擎，Windows 直接读 macOS 盘，加密卷可输密码解锁"},
+  partition:{t:"分区管理",d:"分区表读写、建删分区、单分区格式化、收缩扩展、GPT/MBR 互转"},
+  diskutil:{t:"磁盘工具",d:"对标 macOS 磁盘工具：介质健康、容器与卷组结构、只读验证、空间分布"},
+  mount:{t:"挂载管理",d:"查看当前挂载并管理盘符，卸载后即可安全拔盘"}
+};
+function setPage(id){
+  $$("#nav button").forEach(b=> b.dataset.page===id?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  $$(".page").forEach(p=>p.classList.toggle("active",p.dataset.page===id));
+  $("#pageTitle").textContent=PAGES[id].t; $("#pageDesc").textContent=PAGES[id].d;
+  $("#headActions").innerHTML="";
+  if(id==="overview"){
+    const b=document.createElement("button"); b.className="btn ghost";
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg>重新扫描';
+    b.onclick=()=>scanAll(true); $("#headActions").appendChild(b);
+  }
+  if(id==="apfs"){ if(!S.apfs.length) loadApfsDevices(); else setTimeout(()=>scanVolumes(),120); }
+  if(id==="partition"){ loadPtDevices(); }
+  if(id==="diskutil"){ loadDuDevices(); }
+  if(id==="mount"){ loadMounts(); loadApfsMounts(); }
+}
+$("#nav").addEventListener("click",e=>{const b=e.target.closest("button[data-page]"); if(b) setPage(b.dataset.page);});
+
+/* ===== 扫描 ===== */
+async function scanAll(manual){
+  if(manual) $("#devRows").innerHTML='<div class="emptybox">正在扫描本机磁盘…</div>';
+  try{
+    S.scan=await call(api.scan);
+    $("#verLine").textContent="v"+S.scan.version+" · 本地运行";
+    const adm=S.scan.admin;
+    $("#adminLine").textContent=adm?"管理员权限":"普通权限";
+    $("#ledAdmin").style.background=adm?"var(--teal)":"var(--red)";
+    $("#ledAdmin").style.boxShadow="0 0 8px "+(adm?"#48c3a980":"#e0675380");
+    $("#adminBanner").style.display=adm?"none":"flex";
+    $("#stDisks").innerHTML=S.scan.disks.length+"<em>块</em>";
+    $("#stParts").innerHTML=S.scan.disks.reduce((a,d)=>a+(d.parts?d.parts.length:0),0)+"<em>个</em>";
+    $("#stApfs").innerHTML=S.scan.apfsCount+"<em>块</em>";
+    renderDevices(); fillDevices(); updatePreview();
+  }catch(e){
+    $("#devRows").innerHTML='<div class="emptybox">扫描失败：'+esc(e.message)+'</div>';
+    toast(e.message,"err");
+  }
+}
+function renderDevices(){
+  let disks=S.scan.disks||[];
+  if(S.onlyApfs) disks=disks.filter(d=>d.apfs);
+  $("#devRows").innerHTML = disks.length? disks.map(d=>{
+    const cls=d.system?" issys":(d.apfs?" isapfs":"");
+    const icon = d.tran==="usb"
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><rect x="2.5" y="7" width="19" height="10" rx="2"/><path d="M6 11v2M9 11v2"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke-width="1.7"><rect x="3" y="6.5" width="18" height="11" rx="2"/><circle cx="7.5" cy="12" r="1"/><path d="M12 9.5h6M12 14.5h6"/></svg>';
+    const tags=[];
+    if(d.system) tags.push('<span class="tag sys">系统盘</span>');
+    if(d.apfs) tags.push('<span class="tag apfs">APFS</span>');
+    if(!d.system) tags.push('<span class="tag">'+(d.mounted?"已挂载":"可操作")+'</span>');
+    const act = d.system ? '<span class="dim" style="font-size:12px">受保护</span>'
+      : '<div class="dev-act"><button class="btn sm" data-fmt="'+esc(d.path)+'">格式化</button>'
+        +(d.apfs?'<button class="btn sm" data-apfs="'+esc(d.path)+'">读 APFS</button>':'')+'</div>';
+    return '<article class="dev'+cls+'">'
+      +'<div class="dev-ico">'+icon+'</div>'
+      +'<div><div class="dev-top"><strong>'+esc(d.model||d.name||d.path)+'</strong>'+tags.join("")+'</div>'
+      +'<div class="dev-path">'+esc(d.path)+(d.table?' · '+esc(d.table):'')+(d.tran?' · '+esc(d.tran.toUpperCase()):'')+'</div>'
+      +'<div class="map">'+partMap(d)+'</div>'
+      +'<div class="legend">'+(legendOf(d.parts)||'<span class="seg-chip c-free"><u></u>未分区</span>')+'</div></div>'
+      +'<div class="dev-aside"><div class="cap">'+fmtBytes(d.size)+'</div>'+act+'</div>'
+      +'</article>';
+  }).join("") : '<div class="emptybox">没有发现物理磁盘</div>';
+}
+$("#devRows").addEventListener("click",e=>{
+  const f=e.target.closest("[data-fmt]"), a=e.target.closest("[data-apfs]");
+  if(f){ setPage("format"); $("#fmtDev").value=f.dataset.fmt; updatePreview(); }
+  if(a){ setPage("apfs"); $("#apfsDev").value=a.dataset.apfs; scanVolumes(); }
+});
+
+/* ===== 格式化 ===== */
+function fillDevices(){
+  const opts=(S.scan.disks||[]).filter(d=>!d.system).map(d=>
+    '<option value="'+esc(d.path)+'">'+esc((d.model||d.name)+" · "+fmtBytes(d.size))+'</option>').join("");
+  $("#fmtDev").innerHTML=opts||'<option value="">无可用设备</option>';
+  $("#mntDev").innerHTML=(S.scan.disks||[]).map(d=>
+    '<option value="'+esc(d.path)+'">'+esc((d.model||d.name)+" · "+fmtBytes(d.size))+'</option>').join("");
+}
+function updatePreview(){
+  const dev=$("#fmtDev").value; const d=(S.scan.disks||[]).find(x=>x.path===dev);
+  if(!d){ $("#fmtPreview").querySelector(".n").textContent="—"; return; }
+  $("#fmtPreview").querySelector(".n").textContent=(d.model||d.name);
+  $("#fmtPreview").querySelector(".p").textContent=d.path+" · "+fmtBytes(d.size)+" · "+(d.table||"无分区表");
+  $("#fmtMap").innerHTML=partMap(d);
+  $("#fmtLegend").innerHTML=legendOf(d.parts);
+}
+$("#fmtDev").addEventListener("change",updatePreview);
+async function loadSupport(){
+  try{ S.support=await call(api.support); renderFsChips(); }catch(e){ toast(e.message,"err"); }
+}
+function renderFsChips(){
+  $("#fsChips").innerHTML=((S.support&&S.support.fs)||[]).map(f=>
+    '<button class="chip'+(f.available?"":" off")+'" data-fs="'+esc(f.id)+'" aria-pressed="'+(f.id===S.fs)+'">'+esc(f.name)+'<small>'+esc(f.note||"")+'</small></button>').join("");
+}
+$("#fsChips").addEventListener("click",e=>{
+  const b=e.target.closest(".chip"); if(!b||b.classList.contains("off")) return;
+  S.fs=b.dataset.fs; renderFsChips();
+});
+$("#fmtMode").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-mode]"); if(!b) return;
+  S.mode=b.dataset.mode;
+  $$("#fmtMode button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.mode===S.mode));
+});
+$("#btnFmt").addEventListener("click",()=>{
+  const dev=$("#fmtDev").value;
+  if(!dev) return toast("没有可格式化的设备","err");
+  const d=(S.scan.disks||[]).find(x=>x.path===dev)||{};
+  const fs=((S.support&&S.support.fs)||[]).find(f=>f.id===S.fs)||{name:S.fs.toUpperCase()};
+  openModal('<h3>确认格式化</h3><p class="sub">这一步会重建分区表并清空数据，请再核对一次。</p>'
+    +'<div class="row"><span>设备</span><b>'+esc(d.model||"—")+'</b></div>'
+    +'<div class="row"><span>路径</span><b>'+esc(dev)+'</b></div>'
+    +'<div class="row"><span>容量</span><b>'+fmtBytes(d.size)+'</b></div>'
+    +'<div class="row"><span>目标格式</span><b>'+esc(fs.name)+' · '+(S.mode==="quick"?"快速":"完整")+'</b></div>'
+    +'<div class="end"><button class="btn ghost" data-close>取消</button><button class="btn primary" id="doFmt">确认，开始格式化</button></div>');
+  $("#doFmt").onclick=()=>doFormat(dev);
+});
+async function doFormat(dev){
+  closeModal();
+  try{
+    const r=await call(api.format,dev,S.fs,S.mode,$("#fmtLabel").value.trim());
+    S.taskId=r.task; openProgress(); poll();
+  }catch(e){ toast(e.message,"err"); }
+}
+function openProgress(title){
+  openModal('<h3 id="pgTitle">'+(title||"正在格式化")+'</h3><p class="sub" id="pgStage">准备中…</p>'
+    +'<div class="progress"><i id="pgBar"></i></div>'
+    +'<div class="logbox" id="pgLog" style="margin-top:14px"></div>'
+    +'<div class="end"><button class="btn ghost" data-close id="pgClose" disabled>关闭</button></div>');
+}
+function poll(){
+  clearInterval(S.timer);
+  S.timer=setInterval(async()=>{
+    try{
+      const t=await call(api.task,S.taskId);
+      $("#pgStage").textContent="["+t.stage+"] "+(t.progress!=null?Math.round(t.progress*100)+"%":"");
+      $("#pgBar").style.width=((t.progress||0)*100).toFixed(1)+"%";
+      $("#pgLog").innerHTML=(t.log||[]).map(l=>'<div class="'+(l.level==="error"?"er":(l.level==="ok"?"ok":""))+'">'+esc(l.ts+"  "+l.msg)+'</div>').join("");
+      $("#pgLog").scrollTop=$("#pgLog").scrollHeight;
+      if(t.status==="done"||t.status==="failed"){
+        clearInterval(S.timer);
+        const isExp=(t.mode==="export");
+        $("#pgTitle").textContent=(t.status==="done")?(isExp?"导出完成":"格式化完成"):(isExp?"导出失败":"格式化失败");
+        $("#pgStage").textContent=(t.status==="done")
+          ?(isExp?"文件已写入导出目录，可在「挂载管理」页打开":"磁盘已按 "+S.fs.toUpperCase()+" 重建完成")
+          :"请查看下方日志";
+        $("#pgClose").disabled=false;
+        if(isExp){ loadApfsMounts(); } else { taskRecord(t); scanAll(false); }
+      }
+    }catch(e){ clearInterval(S.timer); $("#pgStage").textContent="任务查询失败："+e.message; $("#pgClose").disabled=false; }
+  },900);
+}
+function taskRecord(t){
+  const list=$("#taskList");
+  if(list.textContent==="暂无任务") list.innerHTML="";
+  const row=document.createElement("div"); row.className="taskitem";
+  row.innerHTML='<span class="mono">'+esc((t.device||"").split("\\\\").pop())+" · "+esc((t.fs||"").toUpperCase())+'</span>'
+    +'<span style="color:'+(t.status==="done"?"var(--teal)":"var(--red)")+'">'+(t.status==="done"?"已完成":"失败")+'</span>';
+  list.prepend(row);
+}
+
+/* ===== 弹窗 ===== */
+function openModal(html){ $("#modal").innerHTML=html; $("#scrim").classList.add("open");
+  $("#scrim").onclick=e=>{ if(e.target.id==="scrim"||e.target.closest("[data-close]")) closeModal(); }; }
+function closeModal(){ $("#scrim").classList.remove("open"); }
+
+/* ===== APFS ===== */
+async function loadApfsDevices(){
+  try{
+    S.apfs=(await call(api.apfsDevices))||[];
+    $("#apfsDev").innerHTML=S.apfs.map(d=>'<option value="'+esc(d.path)+'">'+esc(d.path+" · "+fmtBytes(d.size)+" · "+(d.table||"—"))+'</option>').join("")
+      ||'<option value="">未发现可读设备</option>';
+    $("#apfsHint").textContent=S.apfs.length?"共 "+S.apfs.length+" 个原始设备":"插入磁盘后点重新扫描";
+    $("#apfsDev").onchange=()=>{ $("#apfsBrowser").style.display="none"; scanVolumes(); };
+    if(S.apfs.length) scanVolumes();
+  }catch(e){ toast(e.message,"err"); }
+}
+$("#btnApfsScan").addEventListener("click",scanVolumes);
+
+
+async function ptWatch(id){
+  $("#tplProg").style.display="block";
+  const tick=async()=>{
+    try{
+      const t=await call(api.task,id);
+      const pct=t.progress==null?0:t.progress;
+      $("#tplBar").style.width=pct.toFixed(1)+"%";
+      $("#tplPct").textContent=(t.stage||"")+" · "+pct.toFixed(1)+"% · "+fmtBytes(t.done_bytes||0)+" / "+fmtBytes(t.total||0);
+      $("#tplLog").textContent=(t.log||[]).map(l=>l.ts+"  ["+l.level+"] "+l.msg).join("\n");
+      if(t.status==="running"){ setTimeout(tick,700); }
+      else { $("#tplHint").textContent=(t.status==="done"?"完成":"失败"); if(t.status==="done") ptLoadTable(); }
+    }catch(e){ /* 任务查询失败即停 */ }
+  };
+  tick();
+}
+$("#btnQkRun").onclick=async()=>{
+  const dev=$("#ptDev").value; const num=PT.table?PT.table.number:null;
+  if(!num && num!==0) return toast("先读取分区表","err");
+  const input=prompt("一键抹掉会清空整块磁盘的分区表与数据，不可恢复。\n输入磁盘编号 "+num+" 确认：");
+  if(input===null) return;
+  if(String(input).trim()!==String(num)) return toast("确认串不匹配，已取消","err");
+  $("#tplHint").textContent="执行中…";
+  try{
+    const id=await call(api.apfsQuick,dev,$("#qkSize").value.trim()||"0",$("#qkImg").value.trim(),$("#qkName").value.trim(),String(input).trim());
+    ptWatch(id);
+  }catch(e){ toast(e.message,"err"); }
+};
+
+/* ===== APFS 模板还原 ===== */
+async function tplCheck(){
+  const p=$("#tplPath").value.trim(); if(!p) return toast("先填模板路径","err");
+  $("#tplInfo").innerHTML='<div class="emptybox">校验中…</div>';
+  try{
+    const i=await call(api.apfsTemplateInfo,p);
+    $("#tplInfo").innerHTML='<div class="ducheck"><div><div>模板合法 · '+esc(i.uuid||"")+'</div>'
+      +'<div class="dim mono" style="font-size:11.5px">容量 '+fmtBytes(i.capacity||0)+' · 块 '+i.block_size+' 字节 · 卷 '+(i.volumes||[]).join(" / ")+'</div></div></div>';
+  }catch(e){ $("#tplInfo").innerHTML='<div class="emptybox">校验失败：'+esc(e.message)+'</div>'; }
+}
+async function tplRun(){
+  const p=$("#tplPath").value.trim(); if(!p) return toast("先填模板路径","err");
+  const dev=$("#ptDev").value; const num=PT.table?PT.table.number:null;
+  const off=$("#tplOffMB").value.trim()||"0";
+  const input=prompt("将把模板逐字节写入该磁盘的指定偏移，目标范围内的数据全部被覆盖。\n输入磁盘编号 "+num+" 确认：");
+  if(input===null) return;
+  if(String(input).trim()!==String(num)) return toast("确认串不匹配，已取消","err");
+  $("#tplProg").style.display="block";
+  try{
+    const id=await call(api.apfsApplyTemplate,dev,p,off,String(input).trim());
+    $("#tplHint").textContent="任务 "+id+" 运行中";
+    const poll=async()=>{
+      const t=await call(api.task,id);
+      const pct=t.progress==null?0:t.progress;
+      $("#tplBar").style.width=pct.toFixed(1)+"%";
+      $("#tplPct").textContent=t.stage+" · "+pct.toFixed(1)+"% · "+fmtBytes(t.done_bytes||0)+" / "+fmtBytes(t.total||0);
+      $("#tplLog").textContent=(t.log||[]).map(l=>l.ts+"  ["+l.level+"] "+l.msg).join("\n");
+      if(t.status==="running"){ setTimeout(poll,700); }
+      else { $("#tplHint").textContent=(t.status==="done"?"完成":"失败"); if(t.status==="done") ptLoadTable(); }
+    };
+    poll();
+  }catch(e){ toast(e.message,"err"); }
+}
+$("#btnTplCheck").onclick=()=>tplCheck();
+$("#btnTplRun").onclick=()=>tplRun();
+
+/* ===== 分区管理（高级操作） ===== */
+const PT = {devs:[], table:null, plan:[]};
+const DU_COLORS=["#c9a063","#7fa7c8","#8ce2c8","#b79ad0","#d99b8a","#9fbf7a"];
+async function loadPtDevices(){
+  try{
+    if(!S.apfs.length){ const d=await call(api.apfsDevices); S.apfs=d||[]; }
+    PT.devs=S.apfs;
+    $("#ptDev").innerHTML=PT.devs.map(d=>'<option value="'+esc(d.path)+'">'+esc(d.path+" · "+fmtBytes(d.size)+" · "+(d.table||"—"))+'</option>').join("")
+      || '<option value="">没有可用设备</option>';
+    if(PT.devs.length) ptLoadTable();
+  }catch(e){ toast(e.message,"err"); }
+}
+async function ptLoadTable(){
+  const dev=$("#ptDev").value; if(!dev) return toast("没有可用设备","err");
+  try{
+    const t=await call(api.partTable,dev);
+    PT.table=t; PT.plan=[]; ptRenderPlan();
+    const rows=(t.parts||[]).map(p=>'<tr><td class="mono">'+p.index+'</td><td>'+esc(p.type||"—")+'</td>'
+      +'<td class="mono">'+fmtBytes(p.size)+'</td><td class="mono">'+(p.letter?esc(p.letter):"—")+'</td>'
+      +'<td>'+esc(p.fs||"—")+'</td><td>'+esc(p.label||"—")+'</td>'
+      +'<td class="mono">'+esc(String(p.offset))+'</td></tr>').join("");
+    const total=t.size||1;
+    const segs=(t.parts||[]).map((p,i)=>'<i style="width:'+Math.max(1,(p.size/total*100)).toFixed(2)+'%;background:'+DU_COLORS[i%DU_COLORS.length]+'" title="分区 '+p.index+'"></i>').join("");
+    $("#ptBar").innerHTML=segs+'<i style="width:2%;background:#2a3540" title="剩余/空闲"></i>';
+    $("#ptTable").innerHTML= rows
+      ? '<div class="tbl"><table><thead><tr><th style="width:9%">序号</th><th style="width:24%">类型</th><th style="width:16%">容量</th><th style="width:10%">盘符</th><th style="width:13%">文件系统</th><th style="width:18%">卷标</th><th style="width:16%">起始偏移</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      : '<div class="emptybox">该磁盘上没有分区（或分区表未被系统识别）</div>';
+    const gaps=(t.gaps||[]).map(g=>'<option value="'+g.start_mb+'">空闲 '+ (g.start_mb/1024).toFixed(0) +' GB 起 · 可用 '+(g.size_mb/1024).toFixed(0)+' GB</option>').join("");
+    $("#ptGap").innerHTML='<option value="0">自动（首个可用区）</option>'+gaps;
+    $("#ptStyle").textContent=t.style||"—";
+    $("#ptSize").textContent=fmtBytes(t.size||0);
+    $("#ptSec").textContent=(t.sector||512)+" B";
+  }catch(e){ toast(e.message,"err"); }
+}
+function ptAdd(action, desc){
+  PT.plan.push({a:action, d:desc}); ptRenderPlan();
+}
+function ptRenderPlan(){
+  $("#ptPlan").innerHTML = PT.plan.length
+    ? PT.plan.map((p,i)=>'<div class="planrow"><span class="mono dim">'+(i+1)+'</span><span>'+esc(p.d)+'</span><button class="btn ghost sm" data-i="'+i+'">移除</button></div>').join("")
+    : '<div class="emptybox" style="padding:16px">计划为空：左侧添加操作，确认无误后再执行</div>';
+  $("#ptPlan").querySelectorAll("button[data-i]").forEach(b=>{
+    b.onclick=()=>{ PT.plan.splice(+b.dataset.i,1); ptRenderPlan(); };
+  });
+}
+function ptNum(id){ const v=$(id).value.trim(); const n=v?parseInt(v,10):0; return isNaN(n)?0:n; }
+$("#btnPtCreate").onclick=()=>{
+  const fs=$("#ptFs").value, size=ptNum("#ptSizeMB"), off=+$("#ptGap").value, letter=$("#ptLetter").value, label=$("#ptLabel").value.trim();
+  ptAdd({op:"create", size_mb:size, fs, label, letter, offset_mb:off, quick:$("#ptQuick").checked, cluster:ptNum("#ptCluster")},
+        "新建分区 · "+(size?size+" MB":"剩余全部")+" · "+fs.toUpperCase()+(label?" · "+label:"")+(letter?" · 盘符 "+letter.toUpperCase():""));
+};
+$("#btnPtClean").onclick=()=>{
+  if(!confirm("将清空该磁盘的分区表（各分区数据不可恢复）。确定加入计划？")) return;
+  ptAdd({op:"clean"}, "清空磁盘（快速，仅清分区表结构）");
+};
+$("#btnPtCleanAll").onclick=()=>{
+  if(!confirm("完整清零：逐扇区写零，整盘数据不可恢复，耗时可能数小时。确定加入计划？")) return;
+  ptAdd({op:"cleanall"}, "清空磁盘（完整清零，覆盖全盘）");
+};
+$("#btnPtConvert").onclick=()=>{
+  const st=$("#ptConvert").value;
+  ptAdd({op:"convert", style:st}, "分区表转换为 "+st.toUpperCase()+"（磁盘必须为空）");
+};
+$("#btnPtDelete").onclick=()=>{
+  const pn=ptNum("#ptPartNo"); if(!pn) return toast("先填分区编号","err");
+  ptAdd({op:"delete", part:pn}, "删除分区 #"+pn);
+};
+$("#btnPtFormatOne").onclick=()=>{
+  const pn=ptNum("#ptPartNo"); if(!pn) return toast("先填分区编号","err");
+  ptAdd({op:"format", part:pn, fs:$("#ptFs").value, label:$("#ptLabel").value.trim(), quick:$("#ptQuick").checked, cluster:ptNum("#ptCluster")},
+        "格式化分区 #"+pn+" 为 "+$("#ptFs").value.toUpperCase());
+};
+$("#btnPtResize").onclick=()=>{
+  const pn=ptNum("#ptPartNo"), sz=ptNum("#ptShrinkMB");
+  if(!pn||!sz) return toast("需要分区编号与收缩大小","err");
+  ptAdd({op:"shrink", part:pn, size_mb:sz}, "收缩分区 #"+pn+" 腾出 "+sz+" MB");
+};
+$("#btnPtExtend").onclick=()=>{
+  const pn=ptNum("#ptPartNo"); if(!pn) return toast("先填分区编号","err");
+  ptAdd({op:"extend", part:pn}, "扩展分区 #"+pn+" 至相邻可用空间");
+};
+$("#btnPtRun").onclick=async()=>{
+  if(!PT.plan.length) return toast("计划为空","err");
+  const dev=$("#ptDev").value, num=PT.table?PT.table.number:null;
+  const input=prompt("这是不可逆操作。请再次输入该磁盘的编号（"+num+"）以确认：");
+  if(input===null) return;
+  if(String(input).trim()!==String(num)) return toast("确认串不匹配，已取消","err");
+  $("#ptOut").innerHTML='<div class="emptybox">正在执行 diskpart 计划…</div>';
+  try{
+    const r=await call(api.partExec,dev,JSON.stringify(PT.plan.map(x=>x.a)),String(input).trim());
+    $("#ptOut").innerHTML='<div class="panel"><div class="duhead"><h3>'+(r.ok?"执行完成":"执行失败")+'</h3><span class="tag '+(r.ok?"":"sys")+'">退出码 '+r.code+'</span></div>'
+      +'<pre class="mono dim" style="white-space:pre-wrap;font-size:11.5px;line-height:1.7;margin:0">'+esc(r.output||"")+'</pre></div>';
+    if(r.ok){ PT.plan=[]; ptRenderPlan(); ptLoadTable(); }
+  }catch(e){ $("#ptOut").innerHTML='<div class="emptybox">执行失败：'+esc(e.message)+'</div>'; }
+};
+$("#ptDev").onchange=()=>ptLoadTable();
+$("#btnPtTag").onclick=()=>{
+  const pn=ptNum("#ptPartNo"); if(!pn) return toast("先填分区编号","err");
+  const t=$("#ptTag").value;
+  const names={apfs:"APFS",hfsplus:"HFS+",recovery:"Apple 恢复",efi:"EFI 系统",msdata:"Microsoft 数据"};
+  const num=PT.table?PT.table.number:null;
+  const input=prompt("把分区 #"+pn+" 标记为 "+names[t]+" 类型（只改 GPT 类型，不动数据）。\n输入磁盘编号 "+num+" 确认：");
+  if(input===null) return;
+  if(String(input).trim()!==String(num)) return toast("确认串不匹配，已取消","err");
+  call(api.partTag,$("#ptDev").value,String(pn),t,String(input).trim()).then(r=>{
+    $("#ptOut").innerHTML='<div class="panel"><div class="duhead"><h3>类型标记完成</h3><span class="tag">'+esc(r.label||"")+'</span></div><pre class="mono dim" style="white-space:pre-wrap;font-size:11.5px">'+esc(r.output||"")+'</pre></div>';
+    ptLoadTable();
+  }).catch(e=>toast(e.message,"err"));
+};
+
+$("#btnPtReload").onclick=()=>ptLoadTable();
+
+/* ===== 磁盘工具（对标 macOS 磁盘工具） ===== */
+const DU = {devs:[], tree:null};
+async function loadDuDevices(){
+  try{
+    if(!S.apfs.length){ const d=await call(api.apfsDevices); S.apfs=d||[]; }
+    DU.devs=S.apfs;
+    $("#duDev").innerHTML=DU.devs.map(d=>'<option value="'+esc(d.path)+'">'+esc(d.path+" · "+fmtBytes(d.size)+" · "+(d.table||"—"))+'</option>').join("")
+      || '<option value="">没有可用设备</option>';
+    if(DU.devs.length){ duLoad(); }
+  }catch(e){ toast(e.message,"err"); }
+}
+function duRow(k,v){
+  return '<div class="usage-line" style="justify-content:space-between"><span class="dim">'+esc(k)+'</span><span class="mono">'+esc(String(v==null||v===""?"—":v))+'</span></div>';
+}
+async function duLoad(){
+  const dev=$("#duDev").value; if(!dev) return toast("没有可用设备","err");
+  $("#duHint").textContent="读取中…";
+  try{
+    const m=await call(api.duMedia,dev);
+    const healthCls = (m.health==="Healthy")? "ok":"warn";
+    $("#duMedia").innerHTML='<div>'
+      +'<div class="panel"><div class="duhead"><h3>介质与健康</h3><span class="tag '+(healthCls==="ok"?"":"sys")+'">'+esc(m.health||"未知")+'</span></div><div class="dubody">'
+      +duRow("型号",m.model)+duRow("序列号",m.serial)+duRow("固件",m.firmware)
+      +duRow("容量",fmtBytes(m.size||0))+duRow("总线",m.bus)+duRow("介质类型",m.media)
+      +duRow("分区表",m.partition_style)+duRow("运行状态",m.op_status)
+      +duRow("通电小时",m.power_on)+duRow("温度",m.temp!=null?m.temp+" ℃":"—")
+      +duRow("磨损",m.wear!=null?m.wear+" %":"—")+duRow("读写错误",(m.read_err||0)+" / "+(m.write_err||0))
+      +'</div></div></div>';
+    const t=await call(api.duTree,dev);
+    DU.tree=t;
+    const c=t.container||{};
+    let html='<div class="panel"><div class="duhead"><h3>容器与卷结构</h3><span class="tag apfs">'+(t.volumes||[]).length+' 个卷</span></div><div class="dubody">'
+      +duRow("容器 UUID",c.uuid)+duRow("块大小",c.block_size?fmtBytes(c.block_size):"—")
+      +duRow("容器偏移",c.offset)+duRow("keybag 位置",c.keybag_paddr!=null?(c.keybag_paddr+" (×"+c.keybag_blocks+" 块)"):"—")
+      +duRow("最大卷数 / 已用",(c.max_file_systems||"—"));
+    html+='</div></div>';
+    const groups=t.groups||[];
+    html+='<div style="margin-top:14px">'+groups.map(g=>{
+      const vols=(g.volumes||[]).map(v=>'<div class="duvol"><div class="nm">'+esc(v.name)
+        +'<span class="tag apfs">'+esc(v.role||"—")+'</span></div>'
+        +'<div class="meta dim mono">'+esc(v.volume_uuid||"")+' · 偏移 '+esc(String(v.offset))+' · fs_oid '+esc(String(v.fs_oid))+'</div></div>').join("");
+      return '<div class="dugroup"><div class="dim mono" style="font-size:12px;margin:8px 0 6px">卷组 '+esc(g.group)+'</div>'+vols+'</div>';
+    }).join("")+'</div>';
+    $("#duTree").innerHTML=html;
+    const vols=t.volumes||[];
+    $("#duVol").innerHTML=vols.map(v=>'<option value="'+esc(String(v.offset)+"#"+String(v.fs_oid))+'">'+esc(v.name)+' · '+esc(v.role||"普通卷")+'</option>').join("")
+      || '<option value="">没有 APFS 卷</option>';
+    $("#duHint").textContent="已读取";
+  }catch(e){ $("#duHint").textContent="读取失败："+e.message; }
+}
+function duSelVol(){
+  const v=$("#duVol").value; if(!v||v.indexOf("#")<0) return null;
+  const [off,oid]=v.split("#");
+  return {dev:$("#duDev").value, off, oid};
+}
+async function duVerify(){
+  const v=duSelVol(); if(!v) return toast("先选择 APFS 卷","err");
+  $("#duResult").innerHTML='<div class="emptybox">正在验证…</div>';
+  try{
+    const r=await call(api.duVerify,v.dev,String(v.off),String(v.oid));
+    const color=st=>st==="ok"?"#8ce2c8":(st==="warn"?"#e8bf7a":"#e08a8a");
+    const label=st=>st==="ok"?"通过":(st==="warn"?"警告":"失败");
+    $("#duResult").innerHTML='<div class="panel"><div class="duhead"><h3>验证结果</h3><span class="tag">'+esc(label(r.verdict))+'</span></div><div class="dubody">'
+      +(r.checks||[]).map(c=>'<div class="ducheck"><span class="dot" style="background:'+color(c.status)+'"></span><div><div>'+esc(c.name)
+        +'<span class="tag" style="margin-left:8px;color:'+color(c.status)+'">'+esc(label(c.status))+'</span></div>'
+        +'<div class="dim mono" style="font-size:11.5px">'+esc(c.detail||"")+'</div></div></div>').join("")
+      +'</div></div>';
+  }catch(e){ $("#duResult").innerHTML='<div class="emptybox">验证失败：'+esc(e.message)+'</div>'; }
+}
+async function duSpace(){
+  const v=duSelVol(); if(!v) return toast("先选择 APFS 卷","err");
+  $("#duResult").innerHTML='<div class="emptybox">正在统计…</div>';
+  try{
+    const r=await call(api.duSpace,v.dev,String(v.off),String(v.oid),"");
+    const bar=(name,size,total)=>{
+      const pct=total?Math.min(100,(size/total)*100):0;
+      return '<div class="ducheck"><div style="flex:1"><div style="display:flex;justify-content:space-between"><span>'+esc(name)+'</span><span class="mono dim">'+fmtBytes(size)+'</span></div>'
+        +'<div class="bar-usage" style="margin-top:5px"><i style="width:'+pct.toFixed(1)+'%"></i></div></div></div>';
+    };
+    $("#duResult").innerHTML='<div class="panel"><div class="duhead"><h3>空间分布</h3><span class="tag">合计 '+fmtBytes(r.total||0)+'</span></div><div class="dubody">'
+      +'<div class="dim" style="margin:6px 0">按顶层目录</div>'
+      +(r.dirs||[]).map(d=>bar(d.name,d.size,r.total)).join("")
+      +'<div class="dim" style="margin:14px 0 6px">按文件类型</div>'
+      +(r.kinds||[]).map(k=>bar(k.name,k.size,r.total)).join("")
+      +'</div></div>';
+  }catch(e){ $("#duResult").innerHTML='<div class="emptybox">统计失败：'+esc(e.message)+'</div>'; }
+}
+$("#btnDuLoad").onclick=()=>duLoad();
+$("#duDev").onchange=()=>duLoad();
+$("#btnDuVerify").onclick=()=>duVerify();
+$("#btnDuSpace").onclick=()=>duSpace();
+
+async function scanVolumes(){
+  const dev=$("#apfsDev").value; if(!dev) return toast("没有可读设备","err");
+  S.path="/"; S.snap=""; S.snaps=[]; S.infos={}; S.vol=null;
+  $("#apfsBrowser").style.display="none";
+  $("#apfsVols").innerHTML='<div class="volcard"><div class="body"><div class="nm">正在解析容器与卷…</div></div></div>';
+  try{
+    const r=await call(api.apfsVolumes,dev), vols=r.volumes||[];
+    S.vols=vols;
+    if(!vols.length){
+      const dg=r.diag||{};
+      const lines=Object.keys(dg).map(k=>'<div>'+esc(k)+' = '+esc(dg[k])+'</div>').join("");
+      $("#apfsVols").innerHTML='<div class="emptybox">这个设备上没有可解析的 APFS 卷<br>'
+        +'<span class="dim">可能是 NTFS / exFAT / FAT32，或尚未分区；诊断已写入 下载目录/udisk-apfs-diag.txt</span>'
+        +(lines?'<div style="margin-top:10px;text-align:left;font-size:11.5px;line-height:1.7;color:#8b93a1;max-height:150px;overflow:auto">'+lines+'</div>':'')
+        +'</div>';
+      return;
+    }
+    $("#apfsVols").innerHTML=vols.map((v,i)=>volCard(v,i)).join("");
+    vols.forEach((v,i)=>{
+      const card=$("#vol"+i);
+      card.querySelector("[data-browse]").onclick=()=>pickVol(i);
+      card.querySelector("[data-export]").onclick=()=>{ S.snap=""; doExportByPath("/"); };
+      card.querySelector("[data-mount]").onclick=()=>mountThisVolume(v);
+      card.querySelector("[data-volmenu]").onclick=()=>openVolMenu(v);
+    });
+    for(let i=0;i<vols.length;i++){
+      const v=vols[i];
+      try{
+        const inf=await call(api.apfsInfo,v.dev,String(v.offset),String(v.fs_oid));
+        S.infos[i]=inf; fillVolInfo(i,inf);
+      }catch(e){}
+    }
+  }catch(e){ $("#apfsVols").innerHTML='<div class="emptybox">解析失败：'+esc(e.message)+'</div>'; }
+}
+function volCard(v,i){
+  const enc = v.encrypted ? (v.unlocked?'<span class="tag" style="color:#8ce2c8;border-color:#2c5748;background:#132019">已解锁</span>'
+      :'<span class="tag sys">FileVault 加密</span>') : '<span class="tag">未加密</span>';
+  return '<div class="volcard" id="vol'+i+'"><div class="body">'
+    +'<div class="nm">'+esc(v.name)+enc+'</div>'
+    +'<div class="meta">容器偏移 '+v.offset+' · fs_oid '+v.fs_oid+' · '+esc(v.dev)+'</div>'
+    +(v.open_err?'<div class="meta" style="color:#e0a44a">⚠ 卷已找到但目录树打不开：'+esc(v.open_err)+'</div>':'')
+    +'<div class="bar-usage amber" id="vbar'+i+'" style="margin-top:11px"><i style="width:0"></i></div>'
+    +'<div class="usage-line" id="vline'+i+'"><span class="dim">读取卷属性…</span></div>'
+    +'<div class="usage-line" id="vmac'+i+'" style="font-size:11.5px"></div></div>'
+    +'<div class="acts"><button class="btn '+(v.encrypted&&!v.unlocked?"primary":"")+' sm" data-browse>'
+    +(v.encrypted&&!v.unlocked?"输入密码解锁":"浏览文件")+'</button>'
+    +'<button class="btn ghost sm" data-mount>挂载到此电脑</button>'
+    +'<button class="btn ghost sm" data-volmenu title="更多">&#8942;</button>'
+    +'<button class="btn ghost sm" data-export>导出整卷</button></div></div>';
+}
+function fillVolInfo(i,inf){
+  const bar=$("#vbar"+i), line=$("#vline"+i);
+  if(!bar||!line||!inf) return;
+  const cap=inf.capacity||0, used=inf.used||0;
+  const pct=cap? Math.min(100,(used/cap)*100):0;
+  bar.querySelector("i").style.width=pct.toFixed(1)+"%";
+  line.innerHTML='<span>容量 <b>'+fmtBytes(cap)+'</b></span><span>已用 <b>'+fmtBytes(used)+'</b></span>'
+    +'<span>可用 <b style="color:var(--teal)">'+fmtBytes(inf.free)+'</b></span>'
+    +'<span>文件 <b>'+(inf.files||0)+'</b> · 目录 <b>'+(inf.dirs||0)+'</b></span>'
+    +'<span>快照 <b>'+(inf.snapshots||0)+'</b></span>'
+    +'<span class="dim">块 '+fmtBytes(inf.block_size||0)+'</span>';
+  const mac=$("#vmac"+i);
+  if(mac){
+    mac.innerHTML='<span class="tag apfs">'+(inf.role||"—")+'</span>'
+      +'<span class="dim">卷组 <b class="mono">'+(inf.volume_group||"—")+'</b></span>'
+      +'<span class="dim">'+(inf.case_insensitive?"大小写不敏感":"大小写敏感")+'</span>'
+      +(inf.sealed?'<span class="tag sys">密封系统卷</span>':'')
+      +'<span class="dim">链接 <b>'+(inf.symlinks||0)+'</b> · 其他对象 <b>'+(inf.other_objects||0)+'</b></span>';
+  }
+}
+async function pickVol(i){
+  const v=S.vols[i]; S.vol=v; S.snap="";
+  const go=async()=>{
+    try{
+      const r=await call(api.apfsSnapshots,v.dev,String(v.offset),String(v.fs_oid));
+      S.snaps=r.snapshots||[]; S.snapNote=r.note||"";
+    }catch(e){ S.snaps=[]; S.snapNote=e.message; }
+    browse("/");
+  };
+  ensureUnlocked(v, go);
+}
+function snapSelect(){
+  if(!S.snaps||!S.snaps.length) return '<span class="dim" style="font-size:11.5px">无可用快照</span>';
+  const opts=['<option value="">当前状态</option>'].concat(S.snaps.map(x=>{
+    const d=x.created? new Date(x.created*1000).toLocaleString() : ("xid "+x.xid);
+    return '<option value="'+x.xid+'"'+(String(x.xid)===String(S.snap)?" selected":"")+'>'+esc(x.name)+" · "+esc(d)+'</option>';
+  })).join("");
+  return '<select id="snapSel">'+opts+'</select>';
+}
+async function browse(path){
+  const v=S.vol; if(!v) return;
+  S.path=path;
+  try{
+    const r=await call(api.apfsList,v.dev,String(v.offset),String(v.fs_oid),path,String(S.snap||""));
+    $("#apfsBrowser").style.display="block";
+    const segs=path.split("/").filter(Boolean);
+    const crumb='<button data-go="/">'+esc(r.name||v.name)+'</button>'
+      +segs.map((p,i)=>'<span class="dim">/</span><button data-go="/'+segs.slice(0,i+1).join("/")+'">'+esc(p)+'</button>').join("");
+    const snap=snapSelect();
+    $("#apfsBar").innerHTML='<button class="btn sm" id="btnUp"'+(path==="/"?' disabled':'')+'>← 上一级</button>'
+      +'<div class="crumb" style="margin:0">'+crumb+'</div>'
+      +'<div style="flex:1"></div>'
+      +'<span class="tag">只读</span>'
+      +(S.snap?'<span class="tag apfs">快照视图</span>':'')
+      +'<div class="snapbar">'+snap+'</div>'
+      +'<button class="btn sm" id="btnSearch">全盘搜索</button>'
+      +'<button class="btn sm" id="btnBig">大文件</button>'
+      +'<button class="btn sm" id="btnDiff">快照对比</button>'
+      +'<button class="btn sm" id="btnExportDir">导出此目录</button>'
+      +'<button class="btn sm" id="btnDoctor" title="检查权限、WebView2、磁盘与日志">一键诊断</button>';
+    const selEl=$("#snapSel");
+    if(selEl) selEl.onchange=()=>{ S.snap=selEl.value; browse(path); };
+    const upEl=$("#btnUp");
+    if(upEl && path!=="/"){
+      upEl.onclick=()=>{
+        const segs=path.split("/").filter(Boolean);
+        segs.pop();
+        browse(segs.length? "/"+segs.join("/") : "/");
+      };
+    }
+    $("#btnExportDir").onclick=()=>doExportByPath(path);
+    const docBtn=$("#btnDoctor");
+    if(docBtn) docBtn.onclick=()=>runDoctor();
+    $("#btnSearch").onclick=()=>openApfsSearch();
+    $("#btnBig").onclick=()=>openApfsBig();
+    $("#btnDiff").onclick=()=>openApfsDiff();
+    renderDir(path, r.entries||[]);
+  }catch(e){
+    // 列目录失败时把原因直接写在列表区域里（以前只弹一个 toast，
+    // 表格还留着上一次的内容，看起来就像「文件夹是空的」）。
+    $("#apfsBrowser").style.display="block";
+    $("#apfsTable").innerHTML='<div class="emptybox" style="line-height:1.6">打不开 '+esc(path)+'：'+esc(e.message)
+      +'<div style="margin-top:10px"><button class="btn sm" id="btnRetryDir">重试</button> '
+      +'<button class="btn ghost sm" id="btnBackRoot">回到根目录</button></div></div>';
+    const r1=$("#btnRetryDir"); if(r1) r1.onclick=()=>browse(path);
+    const r2=$("#btnBackRoot"); if(r2) r2.onclick=()=>browse("/");
+    toast(e.message,"err");
+  }
+}
+async function runDoctor(){
+  try{
+    const r=await call(api.doctor);
+    const eng=r.engine==="python"?"Python 引擎":"内置 Go 引擎";
+    openModal('<h3>诊断报告</h3><p class="sub">生成方式：'+eng+'（只在本机运行，不上传）</p>'
+      +'<pre class="mono" style="max-height:58vh;overflow:auto;background:#0d1218;border:1px solid #22303c;border-radius:8px;padding:12px;font-size:12px;white-space:pre-wrap">'+esc(r.text||"（空）")+'</pre>'
+      +'<div class="end"><button class="btn ghost" data-close>关闭</button></div>');
+  }catch(e){ toast(e.message,"err"); }
+}
+function copyText(t){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t); toast("已复制到剪贴板","ok"); return; }
+  }catch(e){}
+  const ta=document.createElement("textarea");
+  ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand("copy"); toast("已复制到剪贴板","ok"); }catch(e){ toast("复制失败，请手动选中","err"); }
+  document.body.removeChild(ta);
+}
+
+function upDir(){
+  if(!S.cur || S.cur.path==="/") return;
+  const segs=S.cur.path.split("/").filter(Boolean);
+  segs.pop();
+  browse(segs.length? "/"+segs.join("/") : "/");
+}
+
+function renderDir(path, all){
+  // 过滤词是「当前目录」的上下文：换目录还留着上一层的过滤词，进去就会一片空白，
+  // 看起来就像「点文件夹没反应/文件夹是空的」。
+  if(!S.cur || S.cur.path!==path) S.filter="";
+  S.cur={path:path, ents:all||[]};
+  if(S.selPath!==path){ S.sel=new Set(); S.selPath=path; }
+  renderDirRows();
+}
+
+function renderDirRows(){
+  const path=S.cur.path;
+  let ents=S.cur.ents.slice();
+  const q=(S.filter||"").trim().toLowerCase();
+  if(q) ents=ents.filter(e=>String(e.name||"").toLowerCase().indexOf(q)>=0);
+  const mode=S.sort||"name-asc";
+  ents.sort((a,b)=>{
+    const da=(a.type? a.type==="dir" : !!a.is_dir), db=(b.type? b.type==="dir" : !!b.is_dir);
+    if(da!==db) return da? -1 : 1;
+    if(mode==="size-asc"||mode==="size-desc"){ const d=(a.size||0)-(b.size||0); return mode==="size-asc"? d : -d; }
+    if(mode==="time-asc"||mode==="time-desc"){ const d=(a.mtime||0)-(b.mtime||0); return mode==="time-asc"? d : -d; }
+    const A=String(a.name||"").toLowerCase(), B=String(b.name||"").toLowerCase();
+    return mode==="name-desc"? B.localeCompare(A) : A.localeCompare(B);
+  });
+  const LIMIT=300;
+  const rowHTML=e=>{
+    const isDir = e.type? e.type==="dir" : !!e.is_dir;
+    const ico=isDir?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7f8d99" stroke-width="1.7" style="vertical-align:-3px;margin-right:8px"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>'
+      :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7f8d99" stroke-width="1.7" style="vertical-align:-3px;margin-right:8px"><path d="M6 3h8l5 5v13H6V3Z"/><path d="M14 3v5h5"/></svg>';
+    const act=(isDir?'<button class="btn sm" data-dir="'+esc(e.name)+'">打开</button>'
+      :'<button class="btn sm primary" data-prev="'+esc(e.name)+'">预览</button> <button class="btn sm" data-dl="'+esc(e.name)+'">导出</button>')
+      +' <button class="btn ghost sm" data-info="'+esc(e.name)+'">详情</button>';
+    const mt=e.mtime?new Date(e.mtime*1000).toLocaleDateString():"—";
+    const checked=S.sel.has(e.name)?' checked':'';
+    return '<tr data-row="'+esc(e.name)+'" data-kind="'+(isDir?'dir':'file')+'" style="cursor:'+(isDir?'pointer':'default')+'"><td style="width:34px;padding-right:0"><input type="checkbox" data-sel="'+esc(e.name)+'"'+checked+(isDir?' disabled':'')+' style="width:auto;vertical-align:-2px"></td>'
+      +'<td>'+ico+esc(e.name)+'</td><td class="mono">'+(isDir?"—":fmtBytes(e.size))+'</td>'
+      +'<td class="dim mono">'+mt+'</td><td>'+act+'</td></tr>';
+  };
+  const shown=ents.length>LIMIT?ents.slice(0,LIMIT):ents;
+  const rows=shown.map(rowHTML).join("");
+  const tools='<div style="display:flex;gap:8px;align-items:center;margin:0 0 10px;flex-wrap:wrap">'
+    +'<input id="dirFilter" placeholder="在当前目录里过滤文件名（Ctrl+F）" value="'+esc(S.filter||"")+'"'
+    +' style="flex:1;min-width:220px;padding:8px 11px;border-radius:9px;border:1px solid var(--line2);background:#131a20">'
+    +'<select id="dirSort" style="padding:7px 9px;border-radius:9px;border:1px solid var(--line2);background:#131a20">'
+    +['name-asc','name-desc','size-desc','size-asc','time-desc','time-asc'].map(k=>{
+        const label={ 'name-asc':'名称 A→Z','name-desc':'名称 Z→A','size-desc':'大小 大→小','size-asc':'大小 小→大','time-desc':'时间 新→旧','time-asc':'时间 旧→新'}[k];
+        return '<option value="'+k+'"'+((S.sort||"name-asc")===k?' selected':'')+'>'+label+'</option>';
+      }).join("")
+    +'</select>'
+    +'<button class="btn sm" id="btnSelExp">导出选中（<b id="selN">'+S.sel.size+'</b>）</button>'
+    +'<button class="btn ghost sm" id="btnSelClear">清空选择</button>'
+    +'<button class="btn ghost sm" id="btnCopyDir" title="复制当前目录路径">复制路径</button>'
+    +'<span class="dim" id="dirStat" style="font-size:12px;margin-left:auto"></span>'
+    +'</div>';
+  const emptyMsg = q
+    ? '没有匹配「'+esc(q)+'」的文件（当前目录共 '+S.cur.ents.length+' 项）'
+    : (path==="/"
+        ? '这个卷里没有可显示的条目。<br><span style=\"font-size:11.5px\">如果 macOS 上是满的，说明该卷是加密卷或目录树不完整，可以点「详情」或把诊断发我。</span>'
+        : '这个文件夹是空的。<br><span style=\"font-size:11.5px\">项目包（.app/.photoslibrary）在 APFS 里本身就是目录结构，属正常。</span>');
+  $("#apfsTable").innerHTML=tools+'<div class="tbl"><table>'
+    +'<thead><tr><th style="width:34px"></th><th style="width:48%">名称</th><th style="width:16%">大小</th><th style="width:16%">修改时间</th><th style="width:14%">操作</th></tr></thead>'
+    +'<tbody>'+(rows||'<tr><td colspan="5" class="dim" style="padding:28px;text-align:center;line-height:1.8">'+emptyMsg+'</td></tr>')+'</tbody></table></div>'
+    +'<div class="dim" style="font-size:12px;margin-top:10px;line-height:1.7">只读浏览 · 点文件夹、或点「打开」进下一层 · 双击文件可直接预览 · 点「← 上一级」或按 Backspace 返回 · 隐藏项（. 开头的系统垃圾）已自动不显示</div>'
+    +(ents.length>LIMIT?'<div id="moreWrap" style="padding:12px;text-align:center"><button class="btn sm" id="btnMoreRows">还有 '+(ents.length-LIMIT)+' 项没显示，点这里继续显示</button></div>':'');
+
+  const wireRows=el=>{
+    el.querySelectorAll("[data-dir]").forEach(b=>b.onclick=()=>
+      browse((path==="/"?"":path)+"/"+b.dataset.dir));
+    el.querySelectorAll("[data-dl]").forEach(b=>b.onclick=()=>
+      downloadFile((path==="/"?"":path)+"/"+b.dataset.dl));
+    el.querySelectorAll("[data-info]").forEach(b=>b.onclick=()=>
+      openApfsInfo((path==="/"?"":path)+"/"+b.dataset.info));
+    el.querySelectorAll("[data-prev]").forEach(b=>b.onclick=()=>
+      openPreview((path==="/"?"":path)+"/"+b.dataset.prev));
+    el.querySelectorAll("tbody tr[data-row]").forEach(tr=>{
+      const nm=tr.dataset.row, kind=tr.dataset.kind, full=(path==="/"?"":path)+"/"+nm;
+      tr.onclick=ev=>{
+        if(ev.target.closest("button,input")) return;   // 按钮/勾选框不抢事件
+        if(kind==="dir") browse(full);
+      };
+      tr.ondblclick=ev=>{
+        if(ev.target.closest("button,input")) return;
+        if(kind!=="dir") openPreview(full);
+      };
+    });
+    el.querySelectorAll("[data-sel]").forEach(c=>c.onchange=()=>{
+      if(c.checked) S.sel.add(c.dataset.sel); else S.sel.delete(c.dataset.sel);
+      const n=$("#selN"); if(n) n.textContent=S.sel.size;
+    });
+  };
+  wireRows($("#apfsTable"));
+
+  const moreBtn=$("#btnMoreRows");
+  if(moreBtn) moreBtn.onclick=()=>{
+    const tbody=$("#apfsTable").querySelector("tbody");
+    tbody.insertAdjacentHTML("beforeend", ents.slice(LIMIT).map(rowHTML).join(""));
+    wireRows(tbody);
+    $("#moreWrap").remove();
+  };
+  const fi=$("#dirFilter");
+  if(fi){
+    let t=null;
+    fi.oninput=()=>{ clearTimeout(t); t=setTimeout(()=>{ S.filter=fi.value; renderDirRows(); const g=$("#dirFilter"); if(g){ g.focus(); g.setSelectionRange(g.value.length,g.value.length); } },200); };
+    fi.onkeydown=e=>{ if(e.key==="Enter"){ S.filter=fi.value; renderDirRows(); } };
+  }
+  const so=$("#dirSort");
+  if(so) so.onchange=()=>{ S.sort=so.value; renderDirRows(); };
+  const se=$("#btnSelExp");
+  if(se) se.onclick=()=>exportSelected(path);
+  const sc=$("#btnSelClear");
+  if(sc) sc.onclick=()=>{ S.sel.clear(); renderDirRows(); };
+  const cdr=$("#btnCopyDir");
+  if(cdr) cdr.onclick=()=>copyText(path);
+  const st=$("#dirStat");
+  if(st){
+    const nd=ents.filter(e=>e.type==="dir"||e.is_dir).length;
+    const nf=ents.length-nd;
+    let sz=0; ents.forEach(e=>{ if(!(e.type==="dir"||e.is_dir)) sz+=(e.size||0); });
+    st.textContent=(q?"匹配 ":"")+"共 "+ents.length+" 项（目录 "+nd+" · 文件 "+nf+"）· "+fmtBytes(sz)+(S.snap?" · 快照视图":"");
+  }
+}
+
+async function exportSelected(path){
+  if(!S.sel.size){ toast("先勾选要导出的文件","err"); return; }
+  const base=(path==="/"?"":path)+"/";
+  const names=Array.from(S.sel);
+  let done=0, failed=0;
+  for(const n of names){
+    try{ await call(api.apfsDownload,S.vol.dev,String(S.vol.offset),String(S.vol.fs_oid),base+n,String(S.snap||"")); done++; }
+    catch(e){ failed++; }
+  }
+  S.sel.clear(); renderDirRows();
+  toast("批量导出完成：成功 "+done+" 个"+(failed?("，失败 "+failed+" 个"):""), failed?"err":"ok");
+}
+
+async function downloadFile(p){
+  const v=S.vol;
+  try{ const r=await call(api.apfsDownload,v.dev,String(v.offset),String(v.fs_oid),p,String(S.snap||""));
+    const extra=r.sha256? " · SHA-256 "+r.sha256.slice(0,16)+"…":"";
+    toast("已导出 "+fmtBytes(r.size)+" 到 "+r.path+extra,"ok"); }
+  catch(e){ toast(e.message,"err"); }
+}
+function apfsPathTable(rows, kind){
+  if(!rows||!rows.length) return '<div class="emptybox">没有结果</div>';
+  const head = kind==="big"
+    ? '<tr><th style="width:68%">文件</th><th style="width:16%">大小</th><th style="width:16%">修改时间</th></tr>'
+    : '<tr><th style="width:82%">路径</th><th style="width:18%">大小</th></tr>';
+  const body = rows.map(r=>{
+    const mt=r.mtime?new Date(r.mtime*1000).toLocaleString():"—";
+    const sz=r.is_dir?"目录":fmtBytes(r.size||0);
+    if(kind==="big") return '<tr><td class="mono">'+esc(r.path)+'</td><td class="mono">'+sz+'</td><td class="dim mono">'+mt+'</td></tr>';
+    return '<tr><td class="mono">'+esc(r.path)+'</td><td class="mono">'+sz+'</td></tr>';
+  }).join("");
+  return '<div class="tbl" style="max-height:52vh;overflow:auto"><table><thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>';
+}
+async function openApfsSearch(){
+  const v=S.vol; if(!v) return;
+  openModal('<h3>全盘搜索</h3><p class="sub">按文件名模糊匹配当前卷（含当前快照视图），纯只读解析。</p>'
+    +'<div class="field"><label>关键词</label><input id="kw" placeholder="例如 .jpg / Report / 照片"></div>'
+    +'<div id="kwRes"></div>'
+    +'<div class="end"><button class="btn ghost" data-close>关闭</button><button class="btn primary" id="kwGo">搜索</button></div>');
+  $("#kwGo").onclick=async()=>{
+    const kw=$("#kw").value.trim(); if(!kw) return;
+    $("#kwRes").innerHTML='<div class="dim" style="padding:10px 0">正在扫描整个卷…</div>';
+    try{ const r=await call(api.apfsSearch,v.dev,String(v.offset),String(v.fs_oid),kw,String(S.snap||""));
+      $("#kwRes").innerHTML=apfsPathTable(r.results||[],"list"); }
+    catch(e){ $("#kwRes").innerHTML='<div class="dim">'+esc(e.message)+'</div>'; }
+  };
+}
+async function openApfsBig(){
+  const v=S.vol; if(!v) return;
+  openModal('<h3>大文件排行</h3><p class="sub">按大小列出当前卷最大的 40 个文件，用来判断空间被谁占着。</p>'
+    +'<div id="bigRes"><div class="dim" style="padding:10px 0">正在统计…</div></div>'
+    +'<div class="end"><button class="btn ghost" data-close>关闭</button></div>');
+  try{ const r=await call(api.apfsBigFiles,v.dev,String(v.offset),String(v.fs_oid),String(S.snap||""));
+    $("#bigRes").innerHTML=apfsPathTable(r.files||[],"big"); }
+  catch(e){ $("#bigRes").innerHTML='<div class="dim">'+esc(e.message)+'</div>'; }
+}
+async function openApfsDiff(){
+  const v=S.vol; if(!v) return;
+  if(!S.snaps||S.snaps.length<2){ toast("至少要有两个快照才能对比","err"); return; }
+  const opts=S.snaps.map(x=>'<option value="'+x.xid+'">'+esc(x.name)+' · '+esc(x.created?new Date(x.created*1000).toLocaleString():("xid "+x.xid))+'</option>').join("");
+  openModal('<h3>快照对比</h3><p class="sub">选两个快照，列出新增 / 删除 / 大小变化的文件（仅当前目录及以下）。</p>'
+    +'<div class="field"><label>快照 A（较早）</label><select id="dA">'+opts+'</select></div>'
+    +'<div class="field"><label>快照 B（较晚）</label><select id="dB">'+opts+'</select></div>'
+    +'<div id="diffRes"></div>'
+    +'<div class="end"><button class="btn ghost" data-close>关闭</button><button class="btn primary" id="diffGo">对比</button></div>');
+  const sel=$("#dB"); if(sel&&sel.options.length>1) sel.selectedIndex=1;
+  $("#diffGo").onclick=async()=>{
+    const a=$("#dA").value,b=$("#dB").value;
+    if(a===b) return toast("请选择两个不同的快照","err");
+    $("#diffRes").innerHTML='<div class="dim" style="padding:10px 0">正在对比…</div>';
+    try{
+      const r=await call(api.apfsDiff,v.dev,String(v.offset),String(v.fs_oid),a,b,S.path||"/");
+      const sec=(t,rows,color)=>'<div style="margin-top:10px"><div class="dim" style="margin-bottom:6px">'+t+'（'+(rows||[]).length+'）</div>'
+        +((rows&&rows.length)? '<div style="max-height:20vh;overflow:auto;font-size:12px" class="mono">'+rows.map(x=>'<div style="color:'+color+'">'+esc(x.path)+'</div>').join("")+'</div>' : '<div class="dim" style="font-size:12px">无</div>')+'</div>';
+      $("#diffRes").innerHTML='<div class="dim" style="font-size:12px">A 共 '+r.a_total+' 项 / B 共 '+r.b_total+' 项</div>'
+        +sec("新增",r.added,"#8ce2c8")+sec("删除",r.removed,"#e08a8a")+sec("大小变化",r.changed,"#e8bf7a");
+    }catch(e){ $("#diffRes").innerHTML='<div class="dim">'+esc(e.message)+'</div>'; }
+  };
+}
+async function openApfsInfo(p){
+  const v=S.vol; if(!v) return;
+  openModal('<h3>文件详情</h3><p class="sub mono" style="font-size:12px">'+esc(p)+'</p><div id="fiRes"><div class="dim">读取中…</div></div>'
+    +'<div class="end"><button class="btn" id="btnCopyPath">复制路径</button>'
+    +'<button class="btn ghost" data-close>关闭</button></div>');
+  const cp=$("#btnCopyPath");
+  if(cp) cp.onclick=()=>copyText(p);
+  try{
+    const r=await call(api.apfsFileInfo,v.dev,String(v.offset),String(v.fs_oid),p,String(S.snap||""));
+    const t=(x)=>x? new Date(x*1000).toLocaleString():"—";
+    const kv=(k,val)=>'<div class="usage-line" style="justify-content:space-between"><span class="dim">'+k+'</span><span class="mono">'+esc(String(val))+'</span></div>';
+    $("#fiRes").innerHTML='<div style="max-height:52vh;overflow:auto">'
+      +kv("大小",fmtBytes(r.size||0))+kv("原始大小",fmtBytes(r.uncompressed_size||0))
+      +kv("创建时间",t(r.create_time))+kv("修改时间",t(r.mod_time))
+      +kv("变更时间",t(r.change_time))+kv("访问时间",t(r.access_time))
+      +kv("所有者 UID / GID",(r.owner||0)+" / "+(r.group||0))
+      +kv("权限模式",r.mode||"—")+kv("链接数",r.nlink||0)
+      +kv("BSD 标志",r.bsd_flags||0)+kv("内部标志",r.flag||0)
+      +kv("保护类",r.protection_class||0)+kv("父目录 ID",r.parent_id||0)
+      +(r.xfields?kv("扩展字段",r.xfields):'')
+      +'</div>';
+  }catch(e){ $("#fiRes").innerHTML='<div class="dim">'+esc(e.message)+'</div>'; }
+}
+
+async function doExportByPath(path){
+  const v=S.vol; if(!v) return;
+  try{
+    const r=await call(api.apfsExport,v.dev,String(v.offset),String(v.fs_oid),path,String(S.snap||""));
+    S.taskId=r.task; S.taskKind="export"; openProgress("正在导出");
+    poll();
+  }catch(e){ toast(e.message,"err"); }
+}
+
+
+/* ===== 解锁 / 预览 / 挂载到本机 ===== */
+function ensureUnlocked(v, done){
+  if(!v.encrypted || v.unlocked) return done();
+  openModal('<h3>FileVault 解锁</h3><p class="sub">该卷由软件加密。密码只在本机内存中参与解密，不上传、不落盘。</p>'
+    +'<div class="field"><label>密码</label><input type="password" id="fvPass" placeholder="FileVault 密码"></div>'
+    +'<div class="end"><button class="btn ghost" data-close>取消</button><button class="btn primary" id="doUnlock">解锁</button></div>');
+  $("#doUnlock").onclick=async()=>{
+    const p=$("#fvPass").value; if(!p) return;
+    try{
+      await call(api.apfsUnlock,v.dev,String(v.offset),String(v.fs_oid),p);
+      closeModal(); toast("解锁成功","ok"); v.unlocked=true;
+      const card=$("#vol"+S.vols.indexOf(v));
+      if(card){
+        card.querySelector(".nm").innerHTML=esc(v.name)+'<span class="tag" style="color:#8ce2c8;border-color:#2c5748;background:#132019">已解锁</span>';
+        const bb=card.querySelector("[data-browse]"); if(bb){ bb.textContent="浏览文件"; bb.classList.remove("primary"); }
+      }
+      done();
+    }catch(e){ toast(e.message,"err"); }
+  };
+}
+
+async function openPreview(p){
+  const v=S.vol; if(!v) return;
+  S.pvLocal="";
+  openModal('<h3>文件预览</h3><p class="sub mono" style="font-size:12px">'+esc(p)+'</p>'
+    +'<div id="pvBox"><div class="dim" style="padding:12px 0">正在读取文件…</div></div>'
+    +'<div class="end"><button class="btn ghost" data-close>关闭</button>'
+    +'<button class="btn sm" id="pvDl">导出到下载目录</button>'
+    +'<button class="btn sm" id="pvSys">用系统程序打开</button></div>');
+  $("#pvDl").onclick=()=>downloadFile(p);
+  $("#pvSys").onclick=()=>{ if(S.pvLocal) call(api.open,S.pvLocal).catch(e=>toast(e.message,"err")); else toast("文件还没落到本地缓存","err"); };
+  try{
+    const r=await call(api.preview,v.dev,String(v.offset),String(v.fs_oid),p,String(S.snap||""));
+    S.pvLocal=r.local||"";
+    const u=r.url; let body="";
+    if(r.kind==="image") body='<div style="text-align:center"><img src="'+u+'" style="max-width:100%;max-height:56vh;border-radius:10px"></div>';
+    else if(r.kind==="video") body='<video src="'+u+'" controls autoplay style="width:100%;max-height:56vh;border-radius:10px;background:#000"></video>';
+    else if(r.kind==="audio") body='<audio src="'+u+'" controls style="width:100%"></audio>';
+    else if(r.kind==="pdf") body='<iframe src="'+u+'" style="width:100%;height:56vh;border:0;border-radius:10px;background:#fff"></iframe>';
+    else if(r.kind==="text"){
+      const txt=await (await fetch(u)).text();
+      body='<pre class="mono" style="max-height:56vh;overflow:auto;white-space:pre-wrap;font-size:12.5px;line-height:1.7;background:rgba(0,0,0,.25);padding:12px;border-radius:10px">'+esc(txt.length>200000?txt.slice(0,200000)+"\n…已截断":txt)+'</pre>';
+    } else {
+      body='<div class="dim" style="padding:14px 0">这个格式（'+esc(r.mime||"未知")+'）没法在窗口里渲染，用「系统程序打开」或导出更合适。</div>';
+    }
+    $("#pvBox").innerHTML=body+'<div class="dim" style="font-size:11.5px;margin-top:8px">'+esc(r.name)+' · '+fmtBytes(r.size||0)+'</div>';
+  }catch(e){ $("#pvBox").innerHTML='<div class="dim" style="padding:12px 0">预览失败：'+esc(e.message)+'</div>'; }
+}
+
+function letterOptions(sel){
+  let o="";
+  for(let c=69;c<=90;c++){ const L=String.fromCharCode(c); o+='<option value="'+L+'"'+(sel===L?" selected":"")+'>'+L+':</option>'; }
+  return o;
+}
+
+async function mountThisVolume(v){
+  ensureUnlocked(v, async ()=>{
+    try{
+      const r=await call(api.apfsMount,v.dev,String(v.offset),String(v.fs_oid),"",S.snap||"");
+      toast("已挂载到 "+r.target+"，文件正在后台复制","ok");
+      loadApfsMounts();
+    }catch(e){ toast(e.message,"err"); }
+  });
+}
+
+function openVolMenu(v){
+  ensureUnlocked(v, ()=>{
+    openModal('<h3>挂载这台卷</h3><p class="sub">挂到「此电脑」后可以直接用资源管理器开文件，不用装驱动；APFS 本体始终只读。</p>'
+      +'<div class="field"><label>固定盘符</label><select id="vmLetter"><option value="">自动挑一个空闲的</option>'+letterOptions("")+'</select></div>'
+      +'<div class="field"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="vmAuto" style="width:auto"> 开机后自动挂载</label></div>'
+      +'<div class="end"><button class="btn ghost" data-close>取消</button><button class="btn primary" id="vmGo">挂载</button></div>');
+    $("#vmGo").onclick=async()=>{
+      const letter=$("#vmLetter").value, auto=$("#vmAuto").checked;
+      try{
+        const r=await call(api.apfsMount,v.dev,String(v.offset),String(v.fs_oid),letter,S.snap||"");
+        if(auto&&r.id) await call(api.apfsMountSet,r.id,letter,"1","0");
+        closeModal(); toast("已挂载到 "+r.target+(auto?"，并设为开机自动挂载":""),"ok"); loadApfsMounts();
+      }catch(e){ toast(e.message,"err"); }
+    };
+  });
+}
+
+async function openMountMenu(id){
+  const m=(S.apfsMounts||[]).find(x=>x.id===id); if(!m) return;
+  openModal('<h3>挂载点设置</h3><p class="sub mono" style="font-size:12px">'+esc(m.volume||"")+' · '+esc(m.dir||"")+'</p>'
+    +'<div class="field"><label>盘符</label><select id="mmLetter">'+letterOptions(m.letter||"")+'</select></div>'
+    +'<div class="field"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" id="mmAuto" style="width:auto" '+(m.auto?"checked":"")+'> 开机后自动挂载</label></div>'
+    +'<p class="sub" style="font-size:12px">改盘符会立刻生效；「重建缓存」会把镜像目录清空后重新复制（大卷会慢一些）。</p>'
+    +'<div class="end"><button class="btn ghost" data-close>关闭</button>'
+    +'<button class="btn" id="mmRebuild">重建缓存</button>'
+    +'<button class="btn" id="mmDrop">移除挂载</button>'
+    +'<button class="btn primary" id="mmSave">保存</button></div>');
+  $("#mmSave").onclick=async()=>{
+    try{
+      const r=await call(api.apfsMountSet,m.id,$("#mmLetter").value,$("#mmAuto").checked?"1":"0","0");
+      closeModal(); toast("已设置为 "+r.letter+":","ok"); loadApfsMounts();
+    }catch(e){ toast(e.message,"err"); }
+  };
+  $("#mmRebuild").onclick=async()=>{
+    try{ await call(api.apfsMountSet,m.id,"","0","1"); closeModal(); toast("正在重建缓存","ok"); loadApfsMounts(); }
+    catch(e){ toast(e.message,"err"); }
+  };
+  $("#mmDrop").onclick=async()=>{
+    try{ await call(api.apfsMountDrop,m.id); closeModal(); toast("已卸载并移除记录","ok"); loadApfsMounts(); }
+    catch(e){ toast(e.message,"err"); }
+  };
+}
+
+/* ===== 挂载 ===== */
+async function loadMounts(){
+  try{
+    const ms=(await call(api.mounts))||[];
+    $("#mntRows").innerHTML=ms.length? ms.map(m=>{
+      const u=m.usage||{}, pct=u.size?Math.min(100,(u.used/u.size)*100):0;
+      return '<tr><td class="mono">'+esc(m.target)+'</td><td class="mono">'+esc((m.fstype||"—").toUpperCase())+'</td>'
+        +'<td><span class="mono">'+fmtBytes(u.size)+' / <span style="color:var(--teal)">'+fmtBytes(u.avail)+'</span></span>'
+        +'<div class="bar-usage"><i style="width:'+pct.toFixed(1)+'%"></i></div></td>'
+        +'<td>'+(m.ro?'<span class="tag">只读</span>':'<span class="tag apfs">读写</span>')+'</td>'
+        +'<td>'+(m.can_unmount?'<button class="btn sm" data-um="'+esc(m.target)+'">卸载</button>':'<span class="dim" style="font-size:12px">系统</span>')+'</td></tr>';
+    }).join("") : '<tr><td colspan="5" class="dim" style="padding:32px;text-align:center">没有挂载记录</td></tr>';
+    $("#mntRows").querySelectorAll("[data-um]").forEach(b=>b.onclick=async()=>{
+      try{ await call(api.unmount,b.dataset.um); toast("已卸载 "+b.dataset.um,"ok"); loadMounts(); }catch(e){ toast(e.message,"err"); }
+    });
+  }catch(e){ toast(e.message,"err"); }
+}
+$("#btnMount").addEventListener("click",async()=>{
+  const dev=$("#mntDev").value; if(!dev) return;
+  try{ const r=await call(api.mount,dev); toast("已挂载为 "+r.target,"ok"); loadMounts(); }catch(e){ toast(e.message,"err"); }
+});
+async function loadApfsMounts(){
+  try{
+    const ms=(await call(api.apfsMounts))||[];
+    S.apfsMounts=ms;
+    $("#apfsMntRows").innerHTML=ms.length? ms.map(m=>
+      '<div class="mntcard"><div style="min-width:0"><div class="t1">'+esc(m.volume||"APFS 卷")
+      +(m.letter?' <span class="tag apfs">'+esc(m.letter)+':</span>':'<span class="tag">未分配盘符</span>')
+      +(m.state==="ready"?'<span class="tag" style="color:#8ce2c8;border-color:#2c5748;background:#132019">就绪</span>':'')
+      +(m.state==="syncing"?'<span class="tag">复制中</span>':'')
+      +(m.state==="error"?'<span class="tag sys">出错</span>':'')
+      +(m.letter&&m.visible===false?'<span class="tag sys">盘符未生效</span>':'')
+      +(m.auto?'<span class="tag">开机自动</span>':'')+'</div>'
+      +'<div class="t2">'+esc(m.dir||"")+'</div>'
+      +'<div class="t2" style="color:var(--muted)">'+(m.state==="syncing"
+          ? '正在复制 <b>'+(m.files||0)+'</b> / '+(m.total||0)+' 个文件（'+fmtBytes(m.bytes||0)+'）· 可以先打开，文件会陆续出现'
+          : (m.files||0)+' 个文件 · '+fmtBytes(m.bytes||0))
+        +(m.error?' · '+esc(m.error):'')+'</div>'
+      +(m.state==="syncing"&&m.total?'<div class="bar-usage amber" style="margin-top:8px"><i style="width:'+
+          Math.min(100,(m.files||0)/m.total*100).toFixed(1)+'%"></i></div>':'')+'</div>'
+      +'<div class="acts"><button class="btn sm" data-mo="'+esc(m.dir||"")+'">打开镜像目录</button>'
+      +(m.letter?'<button class="btn sm" data-mgo="'+esc(m.letter)+'">打开盘符</button>':'')
+      +'<button class="btn ghost sm" data-mset="'+esc(m.id)+'" title="更多设置">&#8942;</button></div></div>').join("")
+      :'<div class="dim" style="font-size:12.5px">暂无挂载点：在「读取 APFS」的卷卡上点「挂载到此电脑」</div>';
+    $("#apfsMntRows").querySelectorAll("[data-mo]").forEach(b=>b.onclick=()=>{
+      call(api.open,b.dataset.mo).catch(e=>toast(e.message,"err"));
+    });
+    $("#apfsMntRows").querySelectorAll("[data-mgo]").forEach(b=>b.onclick=()=>{
+      call(api.open,b.dataset.mgo+":\\").catch(e=>toast(e.message,"err"));
+    });
+    $("#apfsMntRows").querySelectorAll("[data-mset]").forEach(b=>b.onclick=()=>openMountMenu(b.dataset.mset));
+  }catch(e){ toast(e.message,"err"); }
+}
+$("#btnMountsRefresh").addEventListener("click",()=>{ loadMounts(); loadApfsMounts(); });
+$("#btnElevate").addEventListener("click",async()=>{
+  try{ await call(api.elevate); }catch(e){ toast(e.message,"err"); }
+});
+
+/* ===== 启动 ===== */
+document.addEventListener("change",e=>{
+  if(e.target && e.target.id==="onlyApfs"){ S.onlyApfs=!!e.target.checked; renderDevices(); fillDevices(); }
+});
+document.addEventListener("keydown",e=>{
+  const t=e.target;
+  if(t && (t.tagName==="INPUT"||t.tagName==="SELECT"||t.tagName==="TEXTAREA")){
+    if(e.key==="Escape"){ e.preventDefault(); S.filter=""; renderDirRows(); if(t.value!==undefined) t.value=""; }
+    return;
+  }
+  if(!S.cur) return;
+  if(e.key==="Backspace"){ e.preventDefault(); upDir(); }
+  else if(e.key==="Escape"){ S.filter=""; renderDirRows(); }
+  else if((e.ctrlKey||e.metaKey) && (e.key==="f"||e.key==="F")){
+    e.preventDefault(); const f=$("#dirFilter"); if(f) f.focus();
+  }
+});
+(async function(){
+  setPage("overview");
+  await loadSupport();
+  // 不再等磁盘扫描完才让界面可用：先渲染骨架，扫描结果回来再填。
+  // （以前启动时同步等 WMI + 逐盘探测，机械硬盘/外置盘多的时候要好几秒。）
+  scanAll(false);
+  setTimeout(()=>toast("纯本地运行，数据不出本机（预览服务只监听 127.0.0.1）",""),2200);
+})();
+</script>
+</body>
+</html>
