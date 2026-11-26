@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	fde "github.com/go-fde/apfs"
 	"github.com/blacktop/go-apfs/types"
+	fde "github.com/go-fde/apfs"
 )
 
 // 只读包装：go-fde 要求 WriteAt/Closer，但解锁只读盘不应写盘。

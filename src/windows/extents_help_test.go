@@ -6,22 +6,14 @@ import (
 )
 
 func TestCopyFileToLocal(t *testing.T) {
-	f, err := os.Open("/tmp/apfs.img")
-	if err != nil {
-		t.Skip("no raw image")
-	}
+	f, c, partOff, _ := openTestContainer(t)
 	defer f.Close()
-	st, _ := f.Stat()
-	c, err := openAPFSContainer(f, st.Size())
-	if err != nil {
-		t.Fatal(err)
-	}
 	if len(c.volumes) == 0 {
 		t.Fatal("no volumes")
 	}
 	v := c.volumes[0]
 	dst := t.TempDir() + "/readme.md"
-	n, err := copyFileTo(v, "/README.md", 0, "/tmp/apfs.img", 0, dst)
+	n, err := copyFileTo(v, "/README.md", 0, testImagePath(), partOff, dst)
 	if err != nil {
 		t.Fatalf("copy: %v", err)
 	}

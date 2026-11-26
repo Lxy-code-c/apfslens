@@ -21,23 +21,23 @@ import (
 // ---------------------------------------------------------------------------
 
 type apfsHandle struct {
-	dev    *winDevice
-	c      *apfsContainer
-	key    string
-	last   int64
-	unlock *unlockState
-	dec      io.Closer
-	unlocked bool
+	dev        *winDevice
+	c          *apfsContainer
+	key        string
+	last       int64
+	unlock     *unlockState
+	dec        io.Closer
+	unlocked   bool
 	unlockPass string
 }
 
 func nowUnix() int64 { return time.Now().Unix() }
 
 type unlockState struct {
-	mu     sync.Mutex
-	veks   map[uint64][]byte // fs_oid -> VEK
-	diag   string
-	pass   string
+	mu   sync.Mutex
+	veks map[uint64][]byte // fs_oid -> VEK
+	diag string
+	pass string
 }
 
 var (

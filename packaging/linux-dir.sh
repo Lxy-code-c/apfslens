@@ -8,7 +8,7 @@ for ARCH in x64 arm64; do
   D="$ROOT/build/linux-$ARCH"
   rm -rf "$D"; mkdir -p "$D"
   cp "$BIN" "$D/apfslens-linux-$ARCH"
-  cp "$ROOT/assets/png/icon-512.png" "$D/apfslens.png"
+  cp "$ROOT/assets/icons/png/icon-512.png" "$D/apfslens.png"
   sed "s/Exec=.*/Exec=apfslens-linux-$ARCH/" "$ROOT/packaging/apfslens.desktop" > "$D/apfslens.desktop"
   chmod +x "$D/apfslens-linux-$ARCH"
   echo "已生成 $D"

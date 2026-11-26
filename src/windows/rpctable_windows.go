@@ -36,8 +36,8 @@ func rpcTable() map[string]func([]string) string {
 		"apiApfsSnapshots": func(a []string) string {
 			return apiApfsSnapshots(get(a, 0), pUint(get(a, 1)), pUint(get(a, 2)))
 		},
-		"apiDuVerify":  func(a []string) string { return apiDuVerify(get(a, 0), get(a, 1), get(a, 2)) },
-		"apiPartExec":  func(a []string) string { return apiPartExec(get(a, 0), get(a, 1), get(a, 2)) },
+		"apiDuVerify": func(a []string) string { return apiDuVerify(get(a, 0), get(a, 1), get(a, 2)) },
+		"apiPartExec": func(a []string) string { return apiPartExec(get(a, 0), get(a, 1), get(a, 2)) },
 		"apiApfsBigFiles": func(a []string) string {
 			return apiApfsBigFiles(get(a, 0), pUint(get(a, 1)), pUint(get(a, 2)), get(a, 3))
 		},

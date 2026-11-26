@@ -1,5 +1,13 @@
 # 变更记录
 
+## 1.0.2 · 仓库重排 + 并发与安全加固
+- 仓库重新组织：`src/windows/` 与 `src/cross/` 两条产品线分开，图标归到 `assets/icons/`，文档归到 `docs/`，`releases/` 目录取消（发布走 GitHub Release）；
+- 容器缓存改成**引用计数**：`openTarget` 返回释放函数，正在用的容器不会被淘汰、文件不会被关，修掉并发下随机的 "file already closed"（表现为目录空白、导出失败）；
+- 本地 HTTP 加 `guard` 中间件：挡跨站 Origin（别的网站页面上的脚本读不了你的盘），单个请求的解析 panic 转成 500，不会带走整个进程；
+- 测试补强：`API` 侧加了 `hidden()` 判定与根路径必须返回界面的用例；测试镜像助手兼容裸容器与 GPT 整盘镜像，新增 `tools/mk-test-image` 生成器；
+- 模块命名统一到 `apfslens` / `apfslensx`，内置 lzgo 模块改 `apfslens.local`；
+- 图标资源、打包脚本路径随目录调整同步更新。
+
 ## 1.0.1 · 只保留英文名 ApfsLens
 - 去掉中文名，产品只用 **ApfsLens**：界面标题、窗口标题、Finder 显示名、Linux 桌面入口、诊断报告、文档全部统一；
 - 其余不变（可执行名、仓库名、安装包名前缀本来就是 `apfslens` / `ApfsLens`）。

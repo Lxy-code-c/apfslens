@@ -14,8 +14,9 @@ import (
 )
 
 // 造一块「GPT + APFS 分区」的虚拟磁盘，验证真实读盘路径：
-//   1) 自己解析 GPT 能拿到准确的分区偏移（不是 0、不是猜的）；
-//   2) 在那个偏移上能解析出 APFS 容器、卷、目录、文件。
+//  1. 自己解析 GPT 能拿到准确的分区偏移（不是 0、不是猜的）；
+//  2. 在那个偏移上能解析出 APFS 容器、卷、目录、文件。
+//
 // 这正是用户那块 A 盘的场景：Windows 列不出分区，只能靠原始表。
 // apfsPayload 从 go-apfs 自带的 test.dmg 里取出一段真实的 APFS 容器字节。
 func apfsPayload(t *testing.T) []byte {

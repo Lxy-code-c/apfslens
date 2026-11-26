@@ -58,7 +58,12 @@ type sliceWriter struct{ b *[]byte }
 
 func (s *sliceWriter) Write(p []byte) (int, error) { *s.b = append(*s.b, p...); return len(p), nil }
 
-func min(a, b int) int { if a < b { return a }; return b }
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
 
 // 稀疏/碎片文件的读出内容必须逐字节正确：空洞补零、顺序按逻辑偏移。
 func TestCopyExtentsSparse(t *testing.T) {

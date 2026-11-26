@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 )
 
 // 容器缓存：同一 (磁盘, 偏移) 只打开一次，避免每次点目录都重新扫一遍。
@@ -22,6 +21,7 @@ type openVol struct {
 	file *os.File
 	c    *apfsContainer
 	used time.Time
+	refs int // 正在用这个容器的请求数；>0 时绝不能被淘汰，否则文件被关掉后读到的是已关闭句柄
 }
 
 var (
@@ -31,45 +31,78 @@ var (
 
 const maxOpen = 4
 
-func openTarget(path string, off int64, size int64) (*apfsContainer, error) {
-	key := fmt.Sprintf("%s@%d", path, off)
+// openTarget 取一个已打开的 APFS 容器，并返回释放函数。
+// 容器里的 SectionReader 指向 file，所以只要还有请求在用（refs>0），
+// 这个条目就不能被淘汰、file 也不能关 —— 否则并发时会出现
+// "file already closed"，表现为随机读失败/列表空白。
+func openTarget(path string, off int64, size int64) (*apfsContainer, func(), error) {
+	key := fmt.Sprintf("%s@%d:%d", path, off, size)
 	cacheMu.Lock()
-	defer cacheMu.Unlock()
-	if o, ok := cache[key]; ok {
+	if o, ok := cache[key]; ok && o.refs >= 0 {
 		o.used = time.Now()
-		return o.c, nil
+		o.refs++
+		cacheMu.Unlock()
+		return o.c, func() { releaseEntry(key) }, nil
 	}
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		cacheMu.Unlock()
+		return nil, nil, err
 	}
-	st, err := f.Stat()
-	if err == nil && !st.Mode().IsRegular() {
+	st, statErr := f.Stat()
+	if statErr == nil && !st.Mode().IsRegular() {
 		size = deviceSize(f, size)
 	}
 	if size <= 0 {
 		f.Close()
-		return nil, errors.New("无法获取大小，请确认路径是可访问的磁盘或镜像文件")
+		cacheMu.Unlock()
+		return nil, nil, errors.New("无法获取大小，请确认路径是可访问的磁盘或镜像文件")
 	}
 	c, err := openAPFSContainer(io.NewSectionReader(f, off, size), size)
 	if err != nil {
 		f.Close()
-		return nil, err
+		cacheMu.Unlock()
+		return nil, nil, err
 	}
-	if len(cache) >= maxOpen {
+	evictIdle()
+	cache[key] = &openVol{key: key, file: f, c: c, used: time.Now(), refs: 1}
+	cacheMu.Unlock()
+	return c, func() { releaseEntry(key) }, nil
+}
+
+// releaseEntry 归还一次引用；如果这条已经被淘汰出 cache，引用归零时关文件。
+func releaseEntry(key string) {
+	cacheMu.Lock()
+	defer cacheMu.Unlock()
+	o, ok := cache[key]
+	if !ok {
+		return
+	}
+	if o.refs > 0 {
+		o.refs--
+	}
+	o.used = time.Now()
+}
+
+// evictIdle 只在 cacheMu 已持有时调用：淘汰最久未用且没人占用的条目。
+func evictIdle() {
+	for len(cache) >= maxOpen {
 		var oldest *openVol
 		for _, v := range cache {
+			if v.refs > 0 {
+				continue
+			}
 			if oldest == nil || v.used.Before(oldest.used) {
 				oldest = v
 			}
 		}
-		if oldest != nil {
-			oldest.file.Close()
-			delete(cache, oldest.key)
+		if oldest == nil {
+			// 全都在用：宁可这次多开一个，也不关别人的句柄。
+			return
 		}
+		oldest.file.Close()
+		delete(cache, oldest.key)
 	}
-	cache[key] = &openVol{key: key, file: f, c: c, used: time.Now()}
-	return c, nil
 }
 
 func jwrite(w http.ResponseWriter, v any) {
@@ -157,11 +190,12 @@ func handleScan(w http.ResponseWriter, r *http.Request) {
 
 func handleVolumes(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
-	c, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
+	c, rel, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
 	if err != nil {
 		jerr(w, err)
 		return
 	}
+	defer rel()
 	list := make([]map[string]any, 0, len(c.volumes))
 	for _, v := range c.volumes {
 		list = append(list, map[string]any{
@@ -183,11 +217,12 @@ func findVol(c *apfsContainer, oid uint64) (*apfsVolume, error) {
 
 func handleList(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
-	c, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
+	c, rel, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
 	if err != nil {
 		jerr(w, err)
 		return
 	}
+	defer rel()
 	v, err := findVol(c, uint64(qInt(r, "oid")))
 	if err != nil {
 		jerr(w, err)
@@ -223,11 +258,12 @@ func handleList(w http.ResponseWriter, r *http.Request) {
 
 func handleDownload(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
-	c, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
+	c, rel, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	defer rel()
 	v, err := findVol(c, uint64(qInt(r, "oid")))
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -246,10 +282,14 @@ func handleDownload(w http.ResponseWriter, r *http.Request) {
 	name := filepath.Base(p)
 	w.Header().Set("Content-Disposition", "attachment; filename*=UTF-8''"+urlEscape(name))
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Length", strconv.FormatInt(int64(st.Size), 10))
-	if _, err := v.readFile(p, uint64(qInt(r, "snap")), w); err != nil {
+	// 不预发 Content-Length：APFS 的 stat 大小可能大于实际可读字节
+	n, err := v.readFile(p, uint64(qInt(r, "snap")), w)
+	if err != nil {
 		// 头已发出，只能记录
 		println("download error:", err.Error())
+	}
+	if uint64(n) != st.Size {
+		println("download size mismatch:", p, n, st.Size)
 	}
 }
 
@@ -273,11 +313,12 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 		jerr(w, errors.New("请输入搜索关键词"))
 		return
 	}
-	c, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
+	c, rel, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
 	if err != nil {
 		jerr(w, err)
 		return
 	}
+	defer rel()
 	v, err := findVol(c, uint64(qInt(r, "oid")))
 	if err != nil {
 		jerr(w, err)
@@ -316,20 +357,25 @@ func handleSearch(w http.ResponseWriter, r *http.Request) {
 
 func handleSnaps(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Query().Get("path")
-	c, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
+	c, rel, err := openTarget(path, qInt(r, "off"), qInt(r, "size"))
 	if err != nil {
 		jerr(w, err)
 		return
 	}
+	defer rel()
 	v, err := findVol(c, uint64(qInt(r, "oid")))
 	if err != nil {
 		jerr(w, err)
 		return
 	}
-	snaps, _ := v.snapshots()
+	snaps, snapErr := v.snapshots()
 	list := make([]map[string]any, 0, len(snaps))
 	for _, s := range snaps {
 		list = append(list, map[string]any{"xid": s.Xid, "name": s.Name, "time": s.Created})
+	}
+	if snapErr != nil {
+		jerr(w, snapErr)
+		return
 	}
 	jok(w, list)
 }

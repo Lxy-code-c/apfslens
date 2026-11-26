@@ -1,73 +1,57 @@
 # ApfsLens
 
-> ApfsLens：一个能“看穿” Mac 格式磁盘的图形工具。插上 Mac 格式化过的盘，双击就能进去翻文件。
-> 名字里的 Lens 就是放大镜 —— 把盘当透明的，一眼看进去。
+**把一个 Mac 格式化过的盘，当透明的来看。**
 
-Windows / Linux / macOS 上的 APFS 只读工具：选一块盘（或磁盘镜像）→ 看里面的卷 → 进目录 → 预览/下载文件。
-**三个平台都是双击即开的图形程序，不提供命令行版本。**
+插上盘、双击打开，就能看到里面的卷、目录和文件，想留哪个导出哪个。Windows / Linux / macOS 三平台都是图形程序，没有命令行入口，也不需要装任何 WebView 或驱动。
 
-界面是本地页面（只监听 `127.0.0.1`，不联网），后端用 Go 自己解析 APFS：容器、卷、目录、文件、快照全部自解析，不依赖系统装载。
+界面只是本地页面（只监听 `127.0.0.1`，不联网），后端用 Go 自己解析 APFS：容器、卷、目录、文件、快照全部自解析。
 
-## 功能
+## 能做什么
 
-- 自动识别 GPT / MBR / Apple 分区表，找出 APFS 分区（也支持直接给整块 APFS 分区或镜像文件）
-- 卷列表（名称、角色、密封、加密、是否可用）、目录浏览、文件下载、卷内搜索、快照列表
-- 隐藏项（`.` 开头，如 `.DS_Store`、`._*`）在任何列表、搜索结果、下载里都不出现
+- 自动识别 GPT / MBR / Apple 分区表，找出 APFS 分区（也支持直接给整块分区或镜像文件）
+- 卷列表（名称、角色、密封、加密、是否可用）、目录浏览、文件导出、卷内搜索、快照浏览
+- 隐藏项（`.` 开头，如 `.DS_Store`、`._*`）在列表、搜索、导出三处全部屏蔽
+- 高分屏友好：Windows 启动即声明每显示器 DPI 感知，125%–250% 缩放下按物理像素渲染
 - Windows 版另有：格式化 / APFS 模板还原、盘符映射「挂载到此电脑」、FileVault 解锁、一键诊断
-- 高分屏友好：Windows 版启动即声明每显示器 DPI 感知（125%~250% 缩放下按物理像素渲染，不会整屏被拉伸变糊），三平台界面字体、表格、图标均按清晰优先排版
 
 ## 仓库结构
 
 ```
-src/                 Windows 版（Go + WebView2 原生窗口，内嵌 ui.html）
-  rsrc_windows_*.syso  程序图标资源（由 assets/icon.ico 生成，已入库）
-src/cross/           Linux / macOS 图形版（纯 Go，无 cgo）
-  apfsx.go             APFS 只读解析：容器 / 卷 / 目录 / 文件 / 快照
-  parttable.go         GPT / MBR / APM 自解析
-  api.go               本地 HTTP 接口（扫描 / 卷 / 目录 / 下载 / 搜索 / 快照）
-  ui.html              图形界面
-native/              Windows 原生辅助模块：C++ 字节搬运、C 分区核对（源码）
-tools/apfslens_doctor.py Python 诊断报告（Windows 版用）
-packaging/           .app 打包脚本、Info.plist、Linux .desktop
-assets/              程序图标：icon.ico / icon.icns / png/icon-*.png / icon-master.png
-releases/<版本>/     各版本二进制与使用说明（版本号见 CHANGELOG，当前 1.0.0）
+src/windows/     Windows 版（Go + WebView2 原生窗口，界面与图标编进 exe）
+src/cross/       Linux / macOS 版（纯 Go 无 cgo，系统浏览器当窗口）
+native/          Windows 辅助引擎源码：C++ 并行搬运、C 分区交叉核对
+tools/           诊断报告排版脚本、测试镜像生成器
+packaging/       .app 打包脚本、Info.plist、Linux .desktop
+assets/icons/    一套图标三种格式：.ico / .icns / png
+docs/            USAGE.md（使用说明）、ARCHITECTURE.md（结构与实现约束）
 ```
+
+细节见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)，使用与排障见 [docs/USAGE.md](docs/USAGE.md)。
 
 ## 构建
 
-需要 Go 1.26+（`GOTOOLCHAIN=go1.27.1`）。
+需要 Go 1.27（`GOTOOLCHAIN=go1.27.1`）。
 
 ```bash
-make windows    # Windows x64 / x86 / ARM64（图标已内嵌）
-make linux      # Linux  x64 / arm64
-make darwin     # macOS  Apple Silicon / x64
-make package    # 打 Linux 目录（含 .desktop + png）+ macOS .app（含 icns）
-make native     # Windows 原生辅助模块（需要 mingw-w64）
-make test       # 单元测试
+make windows    # apfslens-x64.exe / apfslens-x86.exe / apfslens-arm64.exe
+make linux      # apfslens-linux-x64 / apfslens-linux-arm64
+make darwin     # apfslens-macos-arm64 / apfslens-macos-x64
+make package    # Linux 目录（.desktop + png）+ macOS .app（.icns）
+make test       # 单元测试（需要 APFS 测试镜像，见下）
+make vet        # 两侧 go vet
+make native     # Windows 辅助引擎（需要 mingw-w64，可选）
 ```
 
-Windows 图标资源已入库；改图标后执行 `make icons` 重新生成 `.syso`。
+测试镜像可以自己生成（来源是一份 macOS 的 dmg）：
 
-## 各平台形态
+```bash
+go run ./tools/mk-test-image -src test.dmg -out /tmp/apfs.img
+```
 
-| 平台 | 产物 | 打开方式 |
-|------|------|----------|
-| Windows | `apfslens-x64.exe` / `-x86.exe` / `-arm64.exe` | 双击；或用 `launch.cmd`（按 CPU 自动选架构、请求管理员权限） |
-| Linux | `apfslens-linux-x64`（含 `apfslens.desktop`、`apfslens.png`） | 双击桌面入口或可执行文件 |
-| macOS | `ApfsLens.app`（Finder 里显示为「ApfsLens」，Apple Silicon / Intel 各一份） | 双击，或拖进「应用程序」 |
+## 版本
 
-Linux / macOS 版窗口用系统默认浏览器渲染（`127.0.0.1` 随机端口，仅本机可访问），所以不依赖任何 WebView 运行时。读整块盘需要权限：Linux 用 sudo 启动一次或加入 `disk` 组；macOS 首次会弹「完全磁盘访问」，按提示允许。读镜像文件不需要任何权限。
-
-## 能力边界
-
-- 只读：不改动原盘，不做写操作
-- 跨平台版不支持格式化、写盘、盘符映射（这三项只在 Windows 版）
-- 跨平台版对加密卷只显示「加密」标签，不解锁；FileVault 解锁在 Windows 版
-
-## 图标
-
-`assets/` 一套设计三种格式：`icon.ico`（Windows，16–256 多尺寸）、`icon.icns`（macOS，含 512/1024）、`png/icon-*.png`（Linux 桌面与文档）、`icon-master.png`（1024 母版）。图形语义：银色盘片 + 蓝色放大镜 = 查看磁盘里的内容。
+语义化版本：`1.0.0` → `1.0.1` → `1.0.2` …… 每个版本都有 GitHub Release 与 [CHANGELOG](CHANGELOG.md) 记录。
 
 ## License
 
-MIT，见 `LICENSE`。
+MIT，见 [LICENSE](LICENSE)。

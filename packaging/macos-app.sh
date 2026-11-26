@@ -12,6 +12,6 @@ for ARCH in arm64 x64; do
   cp "$BIN" "$APP/Contents/MacOS/ApfsLens"
   chmod +x "$APP/Contents/MacOS/ApfsLens"
   sed "s/@@VER@@/$VER/g" "$ROOT/packaging/Info.plist" > "$APP/Contents/Info.plist"
-  cp "$ROOT/assets/icon.icns" "$APP/Contents/Resources/icon.icns"
+  cp "$ROOT/assets/icons/icon.icns" "$APP/Contents/Resources/icon.icns"
   echo "已生成 $APP"
 done

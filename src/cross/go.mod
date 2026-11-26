@@ -19,9 +19,9 @@ require (
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/vbauerster/mpb/v7 v7.5.3 // indirect
-	udisk.local/third_party/lzgo v0.0.0 // indirect
+	apfslens.local/third_party/lzgo v0.0.0 // indirect
 )
 
 replace github.com/blacktop/lzfse-cgo => ./lzshim
 
-replace udisk.local/third_party/lzgo => ./third_party/lzgo
+replace apfslens.local/third_party/lzgo => ./third_party/lzgo

@@ -14,10 +14,10 @@ import (
 
 // probePart 是 C 引擎 apfslens_probe.exe 报出来的一个 APFS 分区。
 type probePart struct {
-	Offset int64  `json:"offset"`
-	Size   int64  `json:"size"`
-	BS     int    `json:"bs"`
-	NXSB   bool   `json:"nxsb"`
+	Offset int64 `json:"offset"`
+	Size   int64 `json:"size"`
+	BS     int   `json:"bs"`
+	NXSB   bool  `json:"nxsb"`
 }
 
 func probeExePath() string {

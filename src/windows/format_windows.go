@@ -19,11 +19,11 @@ import (
 )
 
 const (
-	gptAPFS  = "{7C3457EF-0000-11AA-AA11-00306543ECAC}"
-	gptHFS   = "{48465300-0000-11AA-AA11-00306543ECAC}"
+	gptAPFS          = "{7C3457EF-0000-11AA-AA11-00306543ECAC}"
+	gptHFS           = "{48465300-0000-11AA-AA11-00306543ECAC}"
 	gptAppleRecovery = "{426F6F74-0000-11AA-AA11-00306543ECAC}"
-	gptEFI   = "{C12A7328-F81F-11D2-BA4B-00A0C93EC93B}"
-	gptMSData = "{EBD0A0A2-B9E5-4433-87C0-68B6B72699C7}"
+	gptEFI           = "{C12A7328-F81F-11D2-BA4B-00A0C93EC93B}"
+	gptMSData        = "{EBD0A0A2-B9E5-4433-87C0-68B6B72699C7}"
 )
 
 var diskOpMu sync.Mutex
@@ -198,7 +198,11 @@ func dropAllVolumeCachesAsync() {
 	// 放到 goroutine 里做：runDiskpart 可能本身就在持有 diskOpMu 的任务里，
 	// 这里只要保证缓存失效，不需要阻塞调用方。
 	go func() {
-		defer func() { if r := recover(); r != nil { logf("PANIC in dropAllVolumeCachesAsync: %v", r) } }()
+		defer func() {
+			if r := recover(); r != nil {
+				logf("PANIC in dropAllVolumeCachesAsync: %v", r)
+			}
+		}()
 		dropAllVolumeCaches()
 	}()
 }

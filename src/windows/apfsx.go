@@ -3,8 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"strconv"
-	"time"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -12,8 +10,10 @@ import (
 	"io"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/blacktop/go-apfs/types"
 )
@@ -35,7 +35,6 @@ type apfsContainer struct {
 	locked   []*lockedVol
 	blockCnt uint64
 	notes    []string
-
 }
 
 type apfsVolume struct {

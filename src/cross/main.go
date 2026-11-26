@@ -9,13 +9,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
 //go:embed ui.html
 var uiFS embed.FS
 
-const appVersion = "1.0.1"
+const appVersion = "1.0.2"
 
 func main() {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -38,13 +39,30 @@ func main() {
 	// 根路径必须直接吐界面。以前用 FileServer 会显示一个「ui.html」目录列表，
 	// 用户看到的是一行可点的文件名 —— 这就是“还要点文件夹”的来源。
 	mux.HandleFunc("/", serveUI)
-	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{Handler: guard(mux), ReadHeaderTimeout: 10 * time.Second}
 
 	go func() {
 		_ = srv.Serve(ln)
 	}()
 	openWindow(url)
 	select {}
+}
+
+// guard 包一层：① 单个请求里的解析 panic 不能把整个进程带走；
+// ② 只接受来自本机同一页面的请求（其它网站页面上的脚本不该能读你的盘）。
+func guard(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if o := r.Header.Get("Origin"); o != "" && !strings.HasPrefix(o, "http://"+r.Host) {
+			http.Error(w, "forbidden origin", http.StatusForbidden)
+			return
+		}
+		defer func() {
+			if v := recover(); v != nil {
+				http.Error(w, "解析失败："+fmt.Sprint(v), http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
 }
 
 // serveUI 只认界面入口：/、/index.html、/ui.html 都给同一份 ui.html，

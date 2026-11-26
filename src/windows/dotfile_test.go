@@ -1,23 +1,14 @@
 package main
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
 
 // 隐藏项（. 开头）不应出现在列表里。
 func TestDotfilesHidden(t *testing.T) {
-	f, err := os.Open("/tmp/apfs.img")
-	if err != nil {
-		t.Skip("no raw image")
-	}
+	f, c, _, _ := openTestContainer(t)
 	defer f.Close()
-	st, _ := f.Stat()
-	c, err := openAPFSContainer(f, st.Size())
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, v := range c.volumes {
 		ents, err := v.listDir("/", 0)
 		if err != nil {

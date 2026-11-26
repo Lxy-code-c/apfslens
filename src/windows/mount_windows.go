@@ -18,35 +18,35 @@ import (
 )
 
 var (
-	shell32              = windows.NewLazySystemDLL("shell32.dll")
+	shell32                = windows.NewLazySystemDLL("shell32.dll")
 	procSHChangeNotify     = shell32.NewProc("SHChangeNotify")
 	procSendMessageTimeout = windows.NewLazySystemDLL("user32.dll").NewProc("SendMessageTimeoutW")
 )
 
 type mountRec struct {
-	ID      string `json:"id"`
-	Volume  string `json:"volume"`
-	Device  string `json:"device"`
-	Offset  int64  `json:"offset"`
-	FsOid   uint64 `json:"fs_oid"`
-	Snap    string `json:"snap,omitempty"`
-	Letter  string `json:"letter"`
-	Dir     string `json:"dir"`
-	Auto    bool   `json:"auto"`
-	At      int64  `json:"at"`
-	State   string `json:"state"`
-	Files   int    `json:"files"`
-	Bytes   int64  `json:"bytes"`
-	Total   int    `json:"total"`
-	Err     string `json:"error,omitempty"`
-	RO      bool   `json:"ro"`
-	dead    bool   // 已被卸载：后台复制循环看到就立刻退出（json 不导出）
+	ID     string `json:"id"`
+	Volume string `json:"volume"`
+	Device string `json:"device"`
+	Offset int64  `json:"offset"`
+	FsOid  uint64 `json:"fs_oid"`
+	Snap   string `json:"snap,omitempty"`
+	Letter string `json:"letter"`
+	Dir    string `json:"dir"`
+	Auto   bool   `json:"auto"`
+	At     int64  `json:"at"`
+	State  string `json:"state"`
+	Files  int    `json:"files"`
+	Bytes  int64  `json:"bytes"`
+	Total  int    `json:"total"`
+	Err    string `json:"error,omitempty"`
+	RO     bool   `json:"ro"`
+	dead   bool   // 已被卸载：后台复制循环看到就立刻退出（json 不导出）
 }
 
 var (
 	mountMu   sync.Mutex
 	mountRecs = map[string]*mountRec{}
-	_ struct{} // 占位，避免空 var 块
+	_         struct{} // 占位，避免空 var 块
 )
 
 func prefsPath() string {
@@ -201,12 +201,12 @@ func mapDrive(letter, dir string) error {
 // notifyDrive 广播驱动器变化，让「此电脑」立刻出现/消失盘符。
 func notifyDrive(letter string, add bool) {
 	const (
-		shcneDriveAdd    = 0x00000100
+		shcneDriveAdd     = 0x00000100
 		shcneDriveRemoved = 0x00000400
-		shcnfPathW       = 0x0005
-		wmDeviceChange   = 0x0219
-		dbtDriveAdded    = 0x8002
-		dbtDriveRemoved  = 0x8004
+		shcnfPathW        = 0x0005
+		wmDeviceChange    = 0x0219
+		dbtDriveAdded     = 0x8002
+		dbtDriveRemoved   = 0x8004
 	)
 	ev := shcneDriveRemoved
 	dbt := dbtDriveRemoved

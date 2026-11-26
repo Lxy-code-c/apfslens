@@ -24,18 +24,18 @@ func apiDoctor() string {
 }
 
 type doctorFacts struct {
-	Version   string
-	Arch      string
-	Admin     bool
-	WebView2  bool
-	LogTail   []string
-	Diag      string
-	Disks     []string
-	Native    []string
-	Time      string
-	LogPath   string
-	DiagPath  string
-	UserData  string
+	Version  string
+	Arch     string
+	Admin    bool
+	WebView2 bool
+	LogTail  []string
+	Diag     string
+	Disks    []string
+	Native   []string
+	Time     string
+	LogPath  string
+	DiagPath string
+	UserData string
 }
 
 func collectDoctorFacts() doctorFacts {

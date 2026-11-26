@@ -22,7 +22,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const appVersion = "1.0.1"
+const appVersion = "1.0.2"
 
 func jok(v any) string {
 	b, err := json.Marshal(map[string]any{"ok": true, "data": v})
@@ -737,9 +737,15 @@ func apiDuTree(dev string) string {
 
 func apiDuVerify(dev, offset, image string) string {
 	checks := []map[string]any{}
-	pass := func(name, detail string) { checks = append(checks, map[string]any{"name": name, "status": "ok", "detail": detail}) }
-	warn := func(name, detail string) { checks = append(checks, map[string]any{"name": name, "status": "warn", "detail": detail}) }
-	fail := func(name, detail string) { checks = append(checks, map[string]any{"name": name, "status": "fail", "detail": detail}) }
+	pass := func(name, detail string) {
+		checks = append(checks, map[string]any{"name": name, "status": "ok", "detail": detail})
+	}
+	warn := func(name, detail string) {
+		checks = append(checks, map[string]any{"name": name, "status": "warn", "detail": detail})
+	}
+	fail := func(name, detail string) {
+		checks = append(checks, map[string]any{"name": name, "status": "fail", "detail": detail})
+	}
 
 	off := pInt(offset)
 	if image != "" {
@@ -871,15 +877,15 @@ func apiDuSpace(dev string, offset, oid uint64, snap string) string {
 
 func apiMounts() string {
 	var rows []struct {
-		Letter  string `json:"Letter"`
-		Label   string `json:"Label"`
-		FS      string `json:"FS"`
-		Size    int64  `json:"Size"`
-		Free    int64  `json:"Free"`
-		Type    string `json:"Type"`
-		Device  string `json:"Device"`
-		IsRO    bool   `json:"IsRO"`
-		System  bool   `json:"System"`
+		Letter string `json:"Letter"`
+		Label  string `json:"Label"`
+		FS     string `json:"FS"`
+		Size   int64  `json:"Size"`
+		Free   int64  `json:"Free"`
+		Type   string `json:"Type"`
+		Device string `json:"Device"`
+		IsRO   bool   `json:"IsRO"`
+		System bool   `json:"System"`
 	}
 	_ = runPSJson(`$r=@(Get-Volume | Where-Object { $_.DriveLetter } | ForEach-Object { [pscustomobject]@{ Letter=[string]$_.Letter; Label=$_.FileSystemLabel; FS=$_.FileSystem; Size=$_.Size; Free=$_.SizeRemaining; Type=[string]$_.DriveType; Device=$_.Path; IsRO=[bool]$_.IsReadOnly; System=($_.DriveType -eq 'Fixed') } }); ConvertTo-Json -InputObject $r -Compress`, &rows)
 	out := []map[string]any{}
@@ -889,7 +895,7 @@ func apiMounts() string {
 		}
 		out = append(out, map[string]any{
 			"target": r.Letter + ":", "fstype": r.FS, "ro": r.IsRO,
-			"usage": map[string]any{"size": r.Size, "used": r.Size - r.Free, "avail": r.Free},
+			"usage":  map[string]any{"size": r.Size, "used": r.Size - r.Free, "avail": r.Free},
 			"device": r.Device, "can_unmount": !r.System, "label": r.Label, "type": r.Type,
 		})
 	}

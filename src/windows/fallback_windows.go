@@ -74,7 +74,7 @@ func browserFallback(reason string) {
 
 	// 本机 HTTP 端口如果没有任何校验，同机的其他程序（甚至网页）
 	// 都能 POST /rpc/apiFormat 去格式化磁盘。这里加一个随机令牌：
-	// 页面里注入的 shim 带 X-UDisk-Token，服务端逐个请求校验。
+	// 页面里注入的 shim 带 X-ApfsLens-Token，服务端逐个请求校验。
 	tkBytes := make([]byte, 16)
 	_, _ = rand.Read(tkBytes)
 	token := hex.EncodeToString(tkBytes)
@@ -89,7 +89,7 @@ func browserFallback(reason string) {
   names.forEach(function(n){
     window[n] = function(){
       var args = Array.prototype.slice.call(arguments).map(function(x){ return x==null ? "" : String(x); });
-      return fetch("/rpc/"+n, {method:"POST", headers:{"Content-Type":"application/json","X-UDisk-Token":TK}, body: JSON.stringify(args)})
+      return fetch("/rpc/"+n, {method:"POST", headers:{"Content-Type":"application/json","X-ApfsLens-Token":TK}, body: JSON.stringify(args)})
         .then(function(r){ return r.text(); });
     };
   });
@@ -137,7 +137,7 @@ func browserFallback(reason string) {
 	})
 	mux.HandleFunc("/rpc/", func(w http.ResponseWriter, r *http.Request) {
 		atomic.StoreInt64(&lastHit, time.Now().Unix())
-		if r.Header.Get("X-UDisk-Token") != token {
+		if r.Header.Get("X-ApfsLens-Token") != token {
 			http.Error(w, "403 forbidden", http.StatusForbidden)
 			return
 		}

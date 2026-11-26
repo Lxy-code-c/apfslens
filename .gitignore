@@ -1,19 +1,19 @@
 # 构建产物
+/build/
 *.exe
 *.dll
 *.o
 *.a
-/build/
-src/cross/build/
-# 本地临时
 *.log
 *.tmp
-*.udisk-part
+*.apfslens-part
 __pycache__/
-# 发布归档（走 GitHub Release，不入 git）
-releases/**/*.zip
-releases/**/*.tar.gz
-releases/**/*.app/
-# 本地 bundle
-*.bundle
-build/
+
+# 本地测试镜像
+*.img
+*.raw
+
+# 编辑器 / 系统
+.DS_Store
+.idea/
+.vscode/

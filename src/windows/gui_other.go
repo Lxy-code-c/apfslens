@@ -13,7 +13,7 @@ import (
 )
 
 func netListen(network, addr string) (net.Listener, error) { return net.Listen(network, addr) }
-func osExit(code int)                               { os.Exit(code) }
+func osExit(code int)                                      { os.Exit(code) }
 
 // 非 Windows 平台（Linux / macOS）的图形界面入口。
 // 本程序只提供图形版，不暴露任何命令行子命令；启动后直接打开本机页面窗口。

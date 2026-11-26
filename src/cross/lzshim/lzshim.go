@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"io"
 
-	pure "udisk.local/third_party/lzgo"
+	pure "apfslens.local/third_party/lzgo"
 )
 
 // DecodeBuffer 解码 LZFSE 流（bvx- 系列块）。
@@ -42,7 +42,7 @@ func LzBitMapDecompressLen(src, dst []byte) (int, int) {
 }
 
 // EncodeBuffer / EncodeLZVNBuffer 仅占位。
-func EncodeBuffer(src []byte) []byte { return nil }
+func EncodeBuffer(src []byte) []byte        { return nil }
 func EncodeLZVNBuffer(src, dst []byte) uint { return 0 }
 
 // DecodeBufferInto 解码到预分配缓冲区。
@@ -58,6 +58,6 @@ func DecodeBufferInto(src, dst []byte) int {
 	return len(out)
 }
 
-func DecodeScratchSize() uint  { return 0 }
-func EncodeScratchSize() uint  { return 0 }
+func DecodeScratchSize() uint                              { return 0 }
+func EncodeScratchSize() uint                              { return 0 }
 func DecodeBufferWithScratch(src, dst, scratch []byte) int { return DecodeBufferInto(src, dst) }
