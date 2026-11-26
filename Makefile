@@ -8,9 +8,9 @@ VER ?= 2026Y11M26D-3
 all: windows native
 
 windows:
-	cd src && GOTOOLCHAIN=$(GOTOOLCHAIN) GOFLAGS=-mod=mod GOOS=windows GOARCH=amd64 $(GO) build -ldflags "$(LDFLAGS)" -o ../U盘格式化工具.exe .
-	cd src && GOTOOLCHAIN=$(GOTOOLCHAIN) GOFLAGS=-mod=mod GOOS=windows GOARCH=386   $(GO) build -ldflags "$(LDFLAGS)" -o ../U盘格式化工具-x86.exe .
-	cd src && GOTOOLCHAIN=$(GOTOOLCHAIN) GOFLAGS=-mod=mod GOOS=windows GOARCH=arm64 $(GO) build -ldflags "$(LDFLAGS)" -o ../U盘格式化工具-arm64.exe .
+	cd src && GOTOOLCHAIN=$(GOTOOLCHAIN) GOFLAGS=-mod=mod GOOS=windows GOARCH=amd64 $(GO) build -ldflags "$(LDFLAGS)" -o ../udisk-tool-x64.exe .
+	cd src && GOTOOLCHAIN=$(GOTOOLCHAIN) GOFLAGS=-mod=mod GOOS=windows GOARCH=386   $(GO) build -ldflags "$(LDFLAGS)" -o ../udisk-tool-x86.exe .
+	cd src && GOTOOLCHAIN=$(GOTOOLCHAIN) GOFLAGS=-mod=mod GOOS=windows GOARCH=arm64 $(GO) build -ldflags "$(LDFLAGS)" -o ../udisk-tool-arm64.exe .
 
 test:
 	cd src && GOTOOLCHAIN=$(GOTOOLCHAIN) GOFLAGS=-mod=mod $(GO) test -count=1 .

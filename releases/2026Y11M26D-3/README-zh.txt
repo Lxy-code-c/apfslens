@@ -86,14 +86,14 @@ A：先确认密码是这台 Mac 上 FileVault 的登录密码；
    若仍失败请把卷卡上的报错发我，我按报错继续调。
 
 Q：双击没反应 / 被杀软拦？
-A：用同目录的「解除拦截并启动.cmd」，它会去掉「来自网络」标记再启动。
+A：用同目录的「launch.cmd」，它会去掉「来自网络」标记再启动。
    程序需要管理员权限才能读物理磁盘（会弹 UAC，点「是」）。
 
 六、文件说明
 ----------------------------------------------------
-U盘格式化工具.exe        主程序（单文件，已内嵌界面，无需 WebView2Loader.dll）
-解除拦截并启动.cmd        解除 SmartScreen 标记并启动
-使用说明.txt             本文件
+udisk-tool-x64.exe        主程序（单文件，已内嵌界面，无需 WebView2Loader.dll）
+launch.cmd        解除 SmartScreen 标记并启动
+README-zh.txt             本文件
 
 运行环境：Windows 10/11 x64，系统自带 WebView2 运行时（Edge 已装即满足）。
 所有解析都在本机完成，程序只监听 127.0.0.1 上一个带随机令牌的预览端口，
@@ -252,14 +252,14 @@ U盘格式化工具.exe        主程序（单文件，已内嵌界面，无需 
 ----------------------------------------------------
 一、三个架构都提供了，按系统自动选，不用你判断：
 
-  U盘格式化工具.exe        → x64（也就是你说的 X86-64 / 64 位 Windows，绝大多数电脑）
-  U盘格式化工具-arm64.exe  → ARM64（高通骁龙 X 系列那些 Windows on ARM 机器）
-  U盘格式化工具-x86.exe    → 32 位 Windows（老机器 / 32 位虚拟机）
+  udisk-tool-x64.exe        → x64（也就是你说的 X86-64 / 64 位 Windows，绝大多数电脑）
+  udisk-tool-arm64.exe  → ARM64（高通骁龙 X 系列那些 Windows on ARM 机器）
+  udisk-tool-x86.exe    → 32 位 Windows（老机器 / 32 位虚拟机）
 
   三个文件是同一套代码分别编译的，功能完全一致；每个 exe 里都内嵌了
   对应架构的 WebView2Loader（x64 / arm64 / x86 各一份），不会出现
   「DLL 位数不对，窗口起不来」。
-  「解除拦截并启动.cmd」会自动识别 PROCESSOR_ARCHITECTURE 选对那个 exe，
+  「launch.cmd」会自动识别 PROCESSOR_ARCHITECTURE 选对那个 exe，
   并且一次性解除三个 exe 的网络来源拦截。
 
 二、卡顿优化（这次的重点之一）：
@@ -314,10 +314,10 @@ U盘格式化工具.exe        主程序（单文件，已内嵌界面，无需 
      改为「打开镜像目录」，两个入口分开，不会再混。
 
 4) 三个架构同时提供（同一份源码，同样的修复）：
-   · U盘格式化工具.exe          —— 64 位（x64）
-   · U盘格式化工具-x86.exe      —— 32 位
-   · U盘格式化工具-arm64.exe    —— ARM64（高通/骁龙本）
-   「解除拦截并启动.cmd」会自动挑当前 CPU 对应的那一个，不用手动选。
+   · udisk-tool-x64.exe          —— 64 位（x64）
+   · udisk-tool-x86.exe      —— 32 位
+   · udisk-tool-arm64.exe    —— ARM64（高通/骁龙本）
+   「launch.cmd」会自动挑当前 CPU 对应的那一个，不用手动选。
 
 5) 本轮检查记录：
    · windows/amd64、windows/386、windows/arm64 三套 go build 全部 0 错误；
@@ -351,7 +351,7 @@ U盘格式化工具.exe        主程序（单文件，已内嵌界面，无需 
    4) 复制改成「先写临时名，写完再改名」（xxx.udisk-part → xxx）。以前
       边复制边能看到半截文件，打开视频/图片会报损坏；现在资源管理器里
       只会出现完整文件。导出整卷/导出目录同样。
-   5) 启动脚本「解除拦截并启动.cmd」会把自己最小化（不再把黑窗口摆在
+   5) 启动脚本「launch.cmd」会把自己最小化（不再把黑窗口摆在
       面前），并且等 3 秒自动关闭，避免「闪一下」的错觉。
    6) 版本号直接写在界面的「关于」里，显示 2026Y11M25D，方便你确认拿到
       的是哪一版。
@@ -519,8 +519,8 @@ U盘格式化工具.exe        主程序（单文件，已内嵌界面，无需 
    udisk_native.exe / udisk_native-x86.exe                  C++ 搬运引擎
    udisk_probe.exe / udisk_probe-x86.exe                    C 分区核对引擎
    udisk_doctor.py                                          Python 诊断引擎
-   使用说明.txt
-   解除拦截并启动.cmd
+   README-zh.txt
+   launch.cmd
    缺任何一个都不会崩：只是对应的能力退回上一级实现（C++→Go、C→跳过、
    Python→Go 排版）。
 
@@ -563,7 +563,7 @@ U盘格式化工具.exe        主程序（单文件，已内嵌界面，无需 
    udisk_native.exe / -x86.exe（C++ 搬运）
    udisk_probe.exe / -x86.exe（C 分区核对）
    udisk_doctor.py（Python 诊断）
-   使用说明.txt、解除拦截并启动.cmd
+   README-zh.txt、launch.cmd
 
 ========================
 十七、2026Y11M26D-2：文件夹可以直接点了 + 几个顺手的小功能

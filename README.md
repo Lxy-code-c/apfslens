@@ -33,7 +33,7 @@ releases/<版本>/     三架构主程序 + 原生模块 + 使用说明
 ```bash
 cd src
 GOTOOLCHAIN=go1.27.1 GOFLAGS=-mod=mod GOOS=windows GOARCH=amd64 \
-  go build -ldflags "-H windowsgui -s -w" -o ../U盘格式化工具.exe .
+  go build -ldflags "-H windowsgui -s -w" -o ../udisk-tool-x64.exe .
 # 386 / arm64 同理换 GOARCH
 ```
 
@@ -62,7 +62,7 @@ i686-w64-mingw32-gcc-posix   -O2 -static -o udisk_probe-x86.exe native/probe.c
 
 ## 运行
 
-把 `releases/<版本>/` 里的文件放在同一目录，双击「解除拦截并启动.cmd」（会按 CPU 自动选 x64 / x86 / ARM64，并请求管理员权限）。缺任何一个辅助模块都不会崩，只是对应能力退回上一级实现。
+把 `releases/<版本>/` 里的文件放在同一目录，双击「launch.cmd」（会按 CPU 自动选 x64 / x86 / ARM64，并请求管理员权限）。缺任何一个辅助模块都不会崩，只是对应能力退回上一级实现。
 
 ## 已知限制
 
