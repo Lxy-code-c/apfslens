@@ -15,7 +15,7 @@ var (
 	logFile *os.File
 )
 
-// initCrashLog 打开 %LOCALAPPDATA%\UDiskTool\log.txt，
+// initCrashLog 打开 %LOCALAPPDATA%\ApfsLens\log.txt，
 // 并把 Go 运行时致命错误（并发写 map、nil 解引用等）也重定向到这个文件，
 // 这样即使程序瞬间闪退，也留下一份可读的死亡现场。
 func initCrashLog() {

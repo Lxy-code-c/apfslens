@@ -1,5 +1,12 @@
 # 变更记录
 
+## 1.0.0 · 更名「盘镜 APFS / ApfsLens」
+- 项目整体改名：U APFS 工具 → **盘镜 APFS（英文 ApfsLens）**，仓库、程序名、安装包、文档、界面标题统一；
+- 版本号不再用日期式，改为语义化版本（`1.0.0` 起）；
+- 可执行文件统一前缀 `apfslens-`（Windows `apfslens-x64.exe`，Linux `apfslens-linux-x64`，macOS `ApfsLens.app`）；
+- Windows 原生辅助模块更名：`apfslens_native.exe`、`apfslens_probe.exe`、`apfslens_doctor.py`；日志与临时文件前缀同步为 `apfslens`；
+- 功能继承上一版：高分屏 DPI 感知修复、三平台界面锐化、隐藏项（`.` 开头）全链路屏蔽。
+
 ## 2026Y11M26D-5
 - 修「界面像图片、有点模糊」：Windows 版进程启动即声明**每显示器 DPI 感知 v2**（`SetProcessDpiAwarenessContext` → `shcore.SetProcessDpiAwareness` → `SetProcessDPIAware` 三级回退），高分屏/缩放 125%~250% 下 WebView2 按物理像素渲染，不再把整个窗口当位图拉伸；
 - 排版锐化：正文字号 15px、行高 1.55，开启 `optimizeLegibility` 与灰度抗锯齿；去掉 600/650 这类会触发“合成加粗”的字重统一为 700；次要文字（说明、表头、占位符）对比度上调，表格改用等宽数字 + 更实的行线，整屏不再灰蒙蒙；

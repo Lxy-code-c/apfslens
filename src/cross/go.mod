@@ -1,4 +1,4 @@
-module udiskx
+module apfslensx
 
 go 1.27.1
 

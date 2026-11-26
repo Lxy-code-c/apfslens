@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleName</key>
-	<string>U APFS</string>
+	<string>ApfsLens</string>
 	<key>CFBundleDisplayName</key>
-	<string>U APFS</string>
+	<string>盘镜 APFS</string>
 	<key>CFBundleIdentifier</key>
-	<string>local.u-apfs.tool</string>
+	<string>app.apfslens</string>
 	<key>CFBundleVersion</key>
 	<string>@@VER@@</string>
 	<key>CFBundleShortVersionString</key>
@@ -15,7 +15,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleExecutable</key>
-	<string>UAPFS</string>
+	<string>ApfsLens</string>
 	<key>CFBundleIconFile</key>
 	<string>icon.icns</string>
 	<key>LSMinimumSystemVersion</key>

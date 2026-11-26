@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// probePart 是 C 引擎 udisk_probe.exe 报出来的一个 APFS 分区。
+// probePart 是 C 引擎 apfslens_probe.exe 报出来的一个 APFS 分区。
 type probePart struct {
 	Offset int64  `json:"offset"`
 	Size   int64  `json:"size"`
@@ -25,9 +25,9 @@ func probeExePath() string {
 	if err != nil {
 		return ""
 	}
-	name := "udisk_probe.exe"
+	name := "apfslens_probe.exe"
 	if runtime.GOARCH == "386" {
-		name = "udisk_probe-x86.exe"
+		name = "apfslens_probe-x86.exe"
 	}
 	p := filepath.Join(filepath.Dir(self), name)
 	if _, err := os.Stat(p); err != nil {
@@ -41,7 +41,7 @@ func probeExePath() string {
 func cProbeAPFS(path string, base int64) ([]probePart, error) {
 	exe := probeExePath()
 	if exe == "" {
-		return nil, fmt.Errorf("缺少 udisk_probe.exe")
+		return nil, fmt.Errorf("缺少 apfslens_probe.exe")
 	}
 	out, err := runHidden(exe, "probe", path, strconv.FormatInt(base, 10))
 	if err != nil {

@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-// nativeCopyExtents 调 C++ 模块 udisk_native.exe：按给定物理段并行拷贝。
+// nativeCopyExtents 调 C++ 模块 apfslens_native.exe：按给定物理段并行拷贝。
 // 它只搬字节，不解析 APFS，所以不会和 Go 端的解析结果产生分歧；
 // 任何失败都返回 error，由 copyFileTo 回退到 Go 路径。
 func nativeCopyExtents(dev string, partOff int64, exts []byteExtent, dst string, total int64) error {
@@ -23,7 +23,7 @@ func nativeCopyExtents(dev string, partOff int64, exts []byteExtent, dst string,
 	if exe == "" {
 		return fmt.Errorf("no native module")
 	}
-	job := filepath.Join(os.TempDir(), fmt.Sprintf("udisk_job_%d.txt", time.Now().UnixNano()))
+	job := filepath.Join(os.TempDir(), fmt.Sprintf("apfslens_job_%d.txt", time.Now().UnixNano()))
 	var b strings.Builder
 	b.WriteString("src=" + dev + "\n")
 	b.WriteString("dst=" + dst + "\n")
@@ -68,9 +68,9 @@ func nativeExePath() string {
 		return ""
 	}
 	dir = filepath.Dir(dir)
-	name := "udisk_native.exe"
+	name := "apfslens_native.exe"
 	if runtime.GOARCH == "386" {
-		name = "udisk_native-x86.exe"
+		name = "apfslens_native-x86.exe"
 	}
 	p := filepath.Join(dir, name)
 	if _, err := os.Stat(p); err != nil {

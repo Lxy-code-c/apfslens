@@ -16,7 +16,7 @@ import (
 //go:embed ui.html
 var uiFS embed.FS
 
-const appVersion = "2026Y11M26D-5"
+const appVersion = "1.0.0"
 
 func main() {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -58,7 +58,7 @@ func mustSub(f embed.FS) fs.FS {
 // 进程本身不带终端：macOS 是 .app，Linux 是桌面快捷方式。
 func openWindow(url string) {
 	// 自动化自检用：不弹浏览器，只把地址打到标准输出（普通使用不会走到）。
-	if os.Getenv("UDISK_NO_BROWSER") == "1" {
+	if os.Getenv("APFSLENS_NO_BROWSER") == "1" {
 		fmt.Println(url)
 		return
 	}

@@ -161,7 +161,7 @@ func browserFallback(reason string) {
 	url := "http://" + ln.Addr().String() + "/?t=" + token
 	logf("open browser ui: %s", url)
 	_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
-	messageBox("U盘格式化工具已在浏览器打开",
+	messageBox("盘镜 APFS 已在浏览器打开",
 		"界面已用默认浏览器打开：\n"+url+"\n\n程序需要一直在后台为这个页面提供服务，\n所以点「确定」后它不会退出（这是正常的）。\n用完后关闭浏览器页面，再在任务栏退出本程序即可。")
 	// 关键：以前这里直接 return，进程立刻退出，浏览器页面随即全部失效，
 	// 表现就是「闪一下就没了」。现在主 goroutine 挂住，HTTP 服务继续跑，

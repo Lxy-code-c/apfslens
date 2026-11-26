@@ -55,7 +55,7 @@ func collectDoctorFacts() doctorFacts {
 		}
 		f.LogTail = lines
 	}
-	f.DiagPath = filepath.Join(downloadsDir(), "udisk-apfs-diag.txt")
+	f.DiagPath = filepath.Join(downloadsDir(), "apfslens-diag.txt")
 	if b, err := os.ReadFile(f.DiagPath); err == nil {
 		f.Diag = string(b)
 		if len(f.Diag) > 4000 {
@@ -72,7 +72,7 @@ func collectDoctorFacts() doctorFacts {
 		f.Disks = append(f.Disks, fmt.Sprintf("%s  %s  %s  分区=%d  APFS=%v  系统盘=%v  %s",
 			d.Path, d.Model, humanBytes(d.Size), len(d.Parts), d.Apfs, d.System, mode))
 	}
-	for _, n := range []string{"udisk_native.exe", "udisk_probe.exe", "udisk_doctor.py"} {
+	for _, n := range []string{"apfslens_native.exe", "apfslens_probe.exe", "apfslens_doctor.py"} {
 		p := filepath.Join(filepath.Dir(mustExecutable()), n)
 		if _, err := os.Stat(p); err == nil {
 			f.Native = append(f.Native, n+" 存在")
@@ -112,7 +112,7 @@ func factsToText(f doctorFacts) string {
 }
 
 func runPythonDoctor(f doctorFacts) (string, error) {
-	script := filepath.Join(filepath.Dir(mustExecutable()), "udisk_doctor.py")
+	script := filepath.Join(filepath.Dir(mustExecutable()), "apfslens_doctor.py")
 	if _, err := os.Stat(script); err != nil {
 		return "", fmt.Errorf("没有诊断脚本")
 	}
@@ -126,7 +126,7 @@ func runPythonDoctor(f doctorFacts) (string, error) {
 	if py == "" {
 		return "", fmt.Errorf("本机没有 Python")
 	}
-	tmp := filepath.Join(os.TempDir(), fmt.Sprintf("udisk_doc_%d.txt", time.Now().UnixNano()))
+	tmp := filepath.Join(os.TempDir(), fmt.Sprintf("apfslens_doc_%d.txt", time.Now().UnixNano()))
 	if err := os.WriteFile(tmp, []byte(factsToText(f)), 0o600); err != nil {
 		return "", err
 	}
@@ -144,7 +144,7 @@ func runPythonDoctor(f doctorFacts) (string, error) {
 
 func formatDoctorFallback(f doctorFacts) string {
 	var b strings.Builder
-	b.WriteString("=== U盘格式化工具 诊断报告 ===\n")
+	b.WriteString("=== 盘镜 APFS 诊断报告 ===\n")
 	fmt.Fprintf(&b, "版本 %s（%s）  时间 %s\n", f.Version, f.Arch, f.Time)
 	line := func(k, v string) { fmt.Fprintf(&b, "%-12s %s\n", k, v) }
 	line("管理员权限", boolTxt(f.Admin, "有", "无（读写原始设备会受限，建议右键以管理员运行）"))
@@ -163,7 +163,7 @@ func formatDoctorFallback(f doctorFacts) string {
 	}
 	b.WriteString("\n--- APFS 诊断 ---\n")
 	if f.Diag == "" {
-		b.WriteString("没有 udisk-apfs-diag.txt（还没遇到过扫描失败，或路径不同）\n")
+		b.WriteString("没有 apfslens-diag.txt（还没遇到过扫描失败，或路径不同）\n")
 	} else {
 		b.WriteString(f.Diag + "\n")
 	}

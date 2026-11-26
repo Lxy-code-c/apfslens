@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """U盘格式化工具 诊断报告生成器（Python 引擎）。
 
-由主程序调用：udisk_doctor.py <facts.txt>
+由主程序调用：apfslens_doctor.py <facts.txt>
 facts.txt 是 Go 端收集的原始事实（key=value + diag_begin/diag_end + log_begin/log_end），
 本脚本只负责排版、归纳和给建议；不联网、不写注册表。
 
@@ -43,7 +43,7 @@ def load(path):
 
 def main():
     if len(sys.argv) < 2:
-        print("用法：udisk_doctor.py <facts.txt>")
+        print("用法：apfslens_doctor.py <facts.txt>")
         return 2
     kv, diag, log = load(sys.argv[1])
 
@@ -86,12 +86,12 @@ def main():
         tips.append("当前不是管理员：读原始磁盘、挂载盘符都会受限，请用「解除拦截并启动.cmd」右键以管理员运行。")
     if not wv2:
         tips.append("缺 WebView2 运行库：装一次 Microsoft Edge WebView2 Runtime 即可，否则界面会退到浏览器模式。")
-    if any("缺失" in n and "udisk_probe" in n for n in natives):
-        tips.append("缺 udisk_probe.exe：C 引擎的分区交叉核对不可用。它必须和主程序放同一个文件夹。")
-    if any("缺失" in n and "udisk_native" in n for n in natives):
-        tips.append("缺 udisk_native.exe：大文件导出会退回 Go 路径（能跑，只是慢）。")
-    if any("缺失" in n and "udisk_doctor" in n for n in natives):
-        tips.append("缺 udisk_doctor.py：本报告会改为 Go 内置排版。")
+    if any("缺失" in n and "apfslens_probe" in n for n in natives):
+        tips.append("缺 apfslens_probe.exe：C 引擎的分区交叉核对不可用。它必须和主程序放同一个文件夹。")
+    if any("缺失" in n and "apfslens_native" in n for n in natives):
+        tips.append("缺 apfslens_native.exe：大文件导出会退回 Go 路径（能跑，只是慢）。")
+    if any("缺失" in n and "apfslens_doctor" in n for n in natives):
+        tips.append("缺 apfslens_doctor.py：本报告会改为 Go 内置排版。")
     apfs_disks = [d for d in disks if "APFS=True" in d]
     if disks and not apfs_disks:
         tips.append("扫到的盘里没有标记 APFS：确认盘已插好、没被别的程序独占；必要时在「读取 APFS」页点刷新。")
@@ -99,7 +99,7 @@ def main():
         if "可打开" not in d:
             tips.append("这块盘标记了 APFS 但打不开：" + d.split("  ")[0] + " —— 多半是权限或盘被占用。")
     if diag:
-        tips.append("有 udisk-apfs-diag.txt：里面记录了上次扫描失败的具体原因，可连同本报告一起发我。")
+        tips.append("有 apfslens-diag.txt：里面记录了上次扫描失败的具体原因，可连同本报告一起发我。")
     if not log:
         tips.append("没有日志：程序可能还没真正启动过，或日志目录被清理。")
 

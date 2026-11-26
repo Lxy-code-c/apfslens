@@ -25,7 +25,7 @@ func copyFileTo(v *apfsVolume, path string, snap uint64, dev string, partOff int
 		st, serr := v.stat(path, snap)
 		if serr == nil && st.Type == "file" {
 			if exts, total, err := v.dataExtents(path, snap); err == nil && total > 8<<20 && total == int64(st.Size) {
-				tp := dst + ".udisk-part"
+				tp := dst + ".apfslens-part"
 				nerr := nativeCopyHook(dev, partOff, exts, tp, total)
 				if nerr == nil {
 					if fi, serr := os.Stat(tp); serr == nil && fi.Size() == total {

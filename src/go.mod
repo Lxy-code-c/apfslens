@@ -1,4 +1,4 @@
-module udisk
+module apfslens
 
 go 1.27.1
 

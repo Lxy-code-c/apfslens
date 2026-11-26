@@ -1,4 +1,7 @@
-# U APFS 工具
+# 盘镜 APFS · ApfsLens
+
+> 一个能“看穿” Mac 格式磁盘的图形工具：插上 Mac 格式化过的盘，双击就能进去翻文件。
+> 名字取「盘 + 镜」——把盘当透明的，放大镜看进去。
 
 Windows / Linux / macOS 上的 APFS 只读工具：选一块盘（或磁盘镜像）→ 看里面的卷 → 进目录 → 预览/下载文件。
 **三个平台都是双击即开的图形程序，不提供命令行版本。**
@@ -24,10 +27,10 @@ src/cross/           Linux / macOS 图形版（纯 Go，无 cgo）
   api.go               本地 HTTP 接口（扫描 / 卷 / 目录 / 下载 / 搜索 / 快照）
   ui.html              图形界面
 native/              Windows 原生辅助模块：C++ 字节搬运、C 分区核对（源码）
-tools/udisk_doctor.py Python 诊断报告（Windows 版用）
+tools/apfslens_doctor.py Python 诊断报告（Windows 版用）
 packaging/           .app 打包脚本、Info.plist、Linux .desktop
 assets/              程序图标：icon.ico / icon.icns / png/icon-*.png / icon-master.png
-releases/<版本>/     各版本二进制与使用说明
+releases/<版本>/     各版本二进制与使用说明（版本号见 CHANGELOG，当前 1.0.0）
 ```
 
 ## 构建
@@ -49,9 +52,9 @@ Windows 图标资源已入库；改图标后执行 `make icons` 重新生成 `.s
 
 | 平台 | 产物 | 打开方式 |
 |------|------|----------|
-| Windows | `udisk-tool-x64.exe` / `-x86.exe` / `-arm64.exe` | 双击；或用 `launch.cmd`（按 CPU 自动选架构、请求管理员权限） |
-| Linux | `udisk-tool-linux-x64`（含 `udisk-tool.desktop`、`udisk-tool.png`） | 双击桌面入口或可执行文件 |
-| macOS | `U APFS.app`（Apple Silicon / Intel 各一份） | 双击，或拖进「应用程序」 |
+| Windows | `apfslens-x64.exe` / `-x86.exe` / `-arm64.exe` | 双击；或用 `launch.cmd`（按 CPU 自动选架构、请求管理员权限） |
+| Linux | `apfslens-linux-x64`（含 `apfslens.desktop`、`apfslens.png`） | 双击桌面入口或可执行文件 |
+| macOS | `ApfsLens.app`（Finder 里显示为「盘镜 APFS」，Apple Silicon / Intel 各一份） | 双击，或拖进「应用程序」 |
 
 Linux / macOS 版窗口用系统默认浏览器渲染（`127.0.0.1` 随机端口，仅本机可访问），所以不依赖任何 WebView 运行时。读整块盘需要权限：Linux 用 sudo 启动一次或加入 `disk` 组；macOS 首次会弹「完全磁盘访问」，按提示允许。读镜像文件不需要任何权限。
 

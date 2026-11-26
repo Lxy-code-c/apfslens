@@ -65,7 +65,7 @@ func diskNumberOf(dev string) int {
 }
 
 func runDiskpart(script string) (string, error) {
-	f, err := os.CreateTemp("", "udisk-*.txt")
+	f, err := os.CreateTemp("", "apfslens-*.txt")
 	if err != nil {
 		return "", err
 	}

@@ -517,9 +517,9 @@ func downloadsDir() string {
 }
 
 func appDataDir() string {
-	d := filepath.Join(os.Getenv("LOCALAPPDATA"), "UDiskTool")
+	d := filepath.Join(os.Getenv("LOCALAPPDATA"), "ApfsLens")
 	if os.Getenv("LOCALAPPDATA") == "" {
-		d = filepath.Join(os.TempDir(), "UDiskTool")
+		d = filepath.Join(os.TempDir(), "ApfsLens")
 	}
 	_ = os.MkdirAll(d, 0o755)
 	return d

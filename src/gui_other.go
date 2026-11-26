@@ -70,7 +70,7 @@ func openBrowser(addr string) {
 func statusPage() string {
 	return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>U APFS 工具</title>
+<title>盘镜 APFS</title>
 <style>
   :root{color-scheme:dark}
   *{box-sizing:border-box;margin:0}
@@ -83,7 +83,7 @@ func statusPage() string {
   .tag{display:inline-block;margin-top:16px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.12);font-size:13px}
 </style></head><body>
 <div class="card">
-  <h1>U APFS 工具 · 图形版</h1>
+  <h1>盘镜 APFS · 图形版</h1>
   <p>当前平台：` + runtime.GOOS + ` / ` + runtime.GOARCH + `。</p>
   <p>磁盘扫描、盘符挂载、格式化等能力目前在 Windows 版本上完整可用；
   本平台为预览版本，APFS 只读解析引擎已随包编译，镜像浏览、文件导出将在后续版本接通。</p>

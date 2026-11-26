@@ -22,7 +22,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const appVersion = "2026Y11M26D-5"
+const appVersion = "1.0.0"
 
 func jok(v any) string {
 	b, err := json.Marshal(map[string]any{"ok": true, "data": v})
@@ -100,13 +100,13 @@ func apiApfsVolumes(dev string) string {
 	}
 	if len(diag) > 0 {
 		var sb strings.Builder
-		sb.WriteString("udisk apfs diag " + time.Now().Format("2006-01-02 15:04:05") + "\n")
+		sb.WriteString("apfslens diag " + time.Now().Format("2006-01-02 15:04:05") + "\n")
 		sb.WriteString("device: " + dev + "\n")
 		for k, v := range diag {
 			sb.WriteString(fmt.Sprintf("%s = %s\n", k, v))
 		}
 		_ = os.MkdirAll(downloadsDir(), 0o755)
-		_ = os.WriteFile(filepath.Join(downloadsDir(), "udisk-apfs-diag.txt"), []byte(sb.String()), 0o644)
+		_ = os.WriteFile(filepath.Join(downloadsDir(), "apfslens-diag.txt"), []byte(sb.String()), 0o644)
 	}
 	if err != nil && len(vols) == 0 {
 		return jok(map[string]any{"volumes": []apfsVolView{}, "diag": diag, "error": err.Error()})
