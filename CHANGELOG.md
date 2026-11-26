@@ -1,5 +1,12 @@
 # 变更记录
 
+## 2026Y11M26D-4
+- 纯图形版：不提供任何命令行入口，三平台均为 GUI 启动；
+- 新增 Linux / macOS 预览构建目标（x64 / arm64），本机页面图形壳，自动调系统浏览器；
+- 新增程序图标：多尺寸 `icon.ico`、`icon.icns`、`png/` 全套；
+- 新增 macOS `.app` 打包脚本（`packaging/macos-app.sh` + `Info.plist`）与 Linux `.desktop` 入口；
+- `Makefile` 拆分为 `windows` / `linux` / `darwin` / `native` / `package` 目标。
+
 ## 2026Y11M26D-3
 - 隐藏项（`.` 开头）在**列目录、全盘搜索、大文件、快照对比、导出、挂载镜像**全链路屏蔽；
 - RPC 出口再兜一层过滤，任何路径都不会把隐藏项吐给界面；

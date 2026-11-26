@@ -9,3 +9,9 @@
 *.tmp
 *.udisk-part
 __pycache__/
+# 发布归档（走 GitHub Release，不入 git）
+releases/**/*.zip
+releases/**/*.tar.gz
+releases/**/*.app/
+# 本地 bundle
+*.bundle
