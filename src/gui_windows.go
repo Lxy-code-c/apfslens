@@ -19,7 +19,7 @@ import (
 //go:embed ui.html
 var uiHTML string
 
-const appTitle = "盘镜 APFS · 磁盘透视 " + appVersion
+const appTitle = "ApfsLens " + appVersion
 
 type logSink struct{}
 

@@ -22,7 +22,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const appVersion = "1.0.0"
+const appVersion = "1.0.1"
 
 func jok(v any) string {
 	b, err := json.Marshal(map[string]any{"ok": true, "data": v})

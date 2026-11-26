@@ -3,7 +3,6 @@ package main
 import (
 	"embed"
 	"fmt"
-	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -16,7 +15,7 @@ import (
 //go:embed ui.html
 var uiFS embed.FS
 
-const appVersion = "1.0.0"
+const appVersion = "1.0.1"
 
 func main() {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -36,7 +35,9 @@ func main() {
 	mux.HandleFunc("/api/search", handleSearch)
 	mux.HandleFunc("/api/snaps", handleSnaps)
 	mux.HandleFunc("/api/sys", handleSys)
-	mux.Handle("/", http.FileServer(http.FS(mustSub(uiFS))))
+	// 根路径必须直接吐界面。以前用 FileServer 会显示一个「ui.html」目录列表，
+	// 用户看到的是一行可点的文件名 —— 这就是“还要点文件夹”的来源。
+	mux.HandleFunc("/", serveUI)
 	srv := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 
 	go func() {
@@ -46,12 +47,22 @@ func main() {
 	select {}
 }
 
-func mustSub(f embed.FS) fs.FS {
-	sub, err := fs.Sub(f, ".")
-	if err != nil {
-		panic(err)
+// serveUI 只认界面入口：/、/index.html、/ui.html 都给同一份 ui.html，
+// 其它路径一律 404，不再暴露任何文件列表。
+func serveUI(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case "/", "/index.html", "/ui.html":
+		b, err := uiFS.ReadFile("ui.html")
+		if err != nil {
+			http.Error(w, "界面资源缺失", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		_, _ = w.Write(b)
+	default:
+		http.NotFound(w, r)
 	}
-	return sub
 }
 
 // 用系统默认浏览器当窗口（Linux 走 xdg-open，macOS 走 open），

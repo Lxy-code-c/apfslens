@@ -1,7 +1,7 @@
-# 盘镜 APFS · ApfsLens
+# ApfsLens
 
-> 一个能“看穿” Mac 格式磁盘的图形工具：插上 Mac 格式化过的盘，双击就能进去翻文件。
-> 名字取「盘 + 镜」——把盘当透明的，放大镜看进去。
+> ApfsLens：一个能“看穿” Mac 格式磁盘的图形工具。插上 Mac 格式化过的盘，双击就能进去翻文件。
+> 名字里的 Lens 就是放大镜 —— 把盘当透明的，一眼看进去。
 
 Windows / Linux / macOS 上的 APFS 只读工具：选一块盘（或磁盘镜像）→ 看里面的卷 → 进目录 → 预览/下载文件。
 **三个平台都是双击即开的图形程序，不提供命令行版本。**
@@ -54,7 +54,7 @@ Windows 图标资源已入库；改图标后执行 `make icons` 重新生成 `.s
 |------|------|----------|
 | Windows | `apfslens-x64.exe` / `-x86.exe` / `-arm64.exe` | 双击；或用 `launch.cmd`（按 CPU 自动选架构、请求管理员权限） |
 | Linux | `apfslens-linux-x64`（含 `apfslens.desktop`、`apfslens.png`） | 双击桌面入口或可执行文件 |
-| macOS | `ApfsLens.app`（Finder 里显示为「盘镜 APFS」，Apple Silicon / Intel 各一份） | 双击，或拖进「应用程序」 |
+| macOS | `ApfsLens.app`（Finder 里显示为「ApfsLens」，Apple Silicon / Intel 各一份） | 双击，或拖进「应用程序」 |
 
 Linux / macOS 版窗口用系统默认浏览器渲染（`127.0.0.1` 随机端口，仅本机可访问），所以不依赖任何 WebView 运行时。读整块盘需要权限：Linux 用 sudo 启动一次或加入 `disk` 组；macOS 首次会弹「完全磁盘访问」，按提示允许。读镜像文件不需要任何权限。
 

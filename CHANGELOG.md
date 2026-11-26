@@ -1,7 +1,11 @@
 # 变更记录
 
-## 1.0.0 · 更名「盘镜 APFS / ApfsLens」
-- 项目整体改名：U APFS 工具 → **盘镜 APFS（英文 ApfsLens）**，仓库、程序名、安装包、文档、界面标题统一；
+## 1.0.1 · 只保留英文名 ApfsLens
+- 去掉中文名，产品只用 **ApfsLens**：界面标题、窗口标题、Finder 显示名、Linux 桌面入口、诊断报告、文档全部统一；
+- 其余不变（可执行名、仓库名、安装包名前缀本来就是 `apfslens` / `ApfsLens`）。
+
+## 1.0.0 · 更名 ApfsLens
+- 项目整体改名：U APFS 工具 → **ApfsLens**，仓库、程序名、安装包、文档、界面标题统一；
 - 版本号不再用日期式，改为语义化版本（`1.0.0` 起）；
 - 可执行文件统一前缀 `apfslens-`（Windows `apfslens-x64.exe`，Linux `apfslens-linux-x64`，macOS `ApfsLens.app`）；
 - Windows 原生辅助模块更名：`apfslens_native.exe`、`apfslens_probe.exe`、`apfslens_doctor.py`；日志与临时文件前缀同步为 `apfslens`；

@@ -144,7 +144,7 @@ func runPythonDoctor(f doctorFacts) (string, error) {
 
 func formatDoctorFallback(f doctorFacts) string {
 	var b strings.Builder
-	b.WriteString("=== 盘镜 APFS 诊断报告 ===\n")
+	b.WriteString("=== ApfsLens 诊断报告 ===\n")
 	fmt.Fprintf(&b, "版本 %s（%s）  时间 %s\n", f.Version, f.Arch, f.Time)
 	line := func(k, v string) { fmt.Fprintf(&b, "%-12s %s\n", k, v) }
 	line("管理员权限", boolTxt(f.Admin, "有", "无（读写原始设备会受限，建议右键以管理员运行）"))

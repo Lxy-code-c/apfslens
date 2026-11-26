@@ -5,7 +5,7 @@
 	<key>CFBundleName</key>
 	<string>ApfsLens</string>
 	<key>CFBundleDisplayName</key>
-	<string>盘镜 APFS</string>
+	<string>ApfsLens</string>
 	<key>CFBundleIdentifier</key>
 	<string>app.apfslens</string>
 	<key>CFBundleVersion</key>
